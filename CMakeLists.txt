@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.5)
 
 project(QEstoqueLoja VERSION 0.1 LANGUAGES CXX)
 
+enable_testing()
+add_subdirectory(tests)
 
 
 set(CMAKE_AUTOUIC ON)
@@ -148,7 +150,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     )
 
 
-
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET QEstoqueLoja APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
 #                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
@@ -278,4 +279,5 @@ endif()
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(QEstoqueLoja)
 endif()
+
 
