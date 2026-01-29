@@ -124,6 +124,7 @@ private:
     //QModelIndex selected_index;
 
 
+    void mostrarProdutoPorCodigoBarras(const QString &codigo);
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
     int getIdProdSelected();

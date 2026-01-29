@@ -156,6 +156,27 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::mostrarProdutoPorCodigoBarras(const QString &codigo)
+{
+    if (codigo.trimmed().isEmpty())
+        return;
+
+    QString sql = QString(
+                      "SELECT * FROM produtos WHERE codigo_barras = '%1' ORDER BY id DESC"
+                      ).arg(codigo);
+
+    model->setQuery(sql);
+
+    // // seleciona a primeira linha automaticamente
+    // if (model->rowCount() > 0) {
+    //     QModelIndex firstIndex = model->index(0, 0);
+    //     ui->Tview_Produtos->selectionModel()->select(
+    //         firstIndex, QItemSelectionModel::ClearAndSelect
+    //         );
+    //     ui->Tview_Produtos->scrollTo(firstIndex);
+    // }
+}
+
 void MainWindow::setarIconesJanela(){
     iconAlterarProduto.addFile(":/QEstoqueLOja/story-editor.svg");
     iconAddProduto.addFile(":/QEstoqueLOja/add-product.svg");
@@ -581,7 +602,7 @@ void MainWindow::on_Btn_AddProd_clicked()
     InserirProduto *addProdJanela = new InserirProduto;
     addProdJanela->show();
     connect(addProdJanela, &InserirProduto::codigoBarrasExistenteSignal,
-            this, &MainWindow::atualizarTableviewComQuery);
+            this, &MainWindow::mostrarProdutoPorCodigoBarras);
     connect(addProdJanela, &InserirProduto::produtoInserido, this,
             &MainWindow::atualizarTableview);
 }
@@ -695,6 +716,7 @@ void MainWindow::on_Btn_Clientes_clicked()
 void MainWindow::atualizarTableviewComQuery(QString &query){
     model->setQuery(query);
 }
+
 void MainWindow::setLocalProd(){
     QItemSelectionModel *selectionModel = ui->Tview_Produtos->selectionModel();
     QModelIndexList selectedIndexes = selectionModel->selectedIndexes();

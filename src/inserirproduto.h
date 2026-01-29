@@ -5,6 +5,7 @@
 #include <QSqlDatabase>
 #include <QLocale>
 #include "util/ibptutil.h"
+#include "../services/InserirProduto_service.h"
 
 
 namespace Ui {
@@ -43,14 +44,15 @@ private:
     QSet<QString> generatedNumbers;
     QLocale portugues;
     QString gerarNumero();
-    bool verificarCodigoBarras();
     QSqlDatabase db = QSqlDatabase::database();
     bool atualizando = false; // Flag para evitar loops recursivos
     //bool eventFilter(QObject *watched, QEvent *event) override;
     IbptUtil *util;
+    InserirProduto_Service *service;
 
+    void carregarConfiguracoes();
 signals:
-    void codigoBarrasExistenteSignal(QString &query);
+    void codigoBarrasExistenteSignal(QString &codigo);
     void produtoInserido();
 };
 

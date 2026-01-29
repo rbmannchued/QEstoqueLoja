@@ -803,8 +803,12 @@ void Entradas::addProdComCodBarras(QString idProd, QString codBarras){
         }
     }
 
-    IbptUtil *util = new IbptUtil(this);
-    resultado["aliquota_imposto"] = util->get_Aliquota_From_Csv(resultado["ncm"].toString());
+    qDebug() << "teste antes: " << resultado["ncm"];
+
+    if (resultado.contains("ncm")) {
+        IbptUtil *util = new IbptUtil(this);
+        resultado["aliquota_imposto"] = util->get_Aliquota_From_Csv(resultado["ncm"].toString());
+    }
 
     db.close();
 
@@ -813,6 +817,8 @@ void Entradas::addProdComCodBarras(QString idProd, QString codBarras){
     qDebug() << "produtoNota: " << produtoNota;
 
     qDebug() << "resultado: " << resultado;
+
+    qDebug() << "teste: " << (produto["ncm"].toString() != produtoNota["ncm"].toString());
 
     MergeProdutos *janelaMerge = new MergeProdutos(produto, produtoNota, resultado);
     janelaMerge->show();
