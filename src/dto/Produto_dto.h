@@ -4,17 +4,17 @@
 #include <QString>
 
 struct ProdutoDTO {
-    QString quantidade;
+    double quantidade;
     QString descricao;
-    QString preco;
+    double preco;
     QString codigoBarras;
     bool nf;
     QString uCom;
-    QString precoFornecedor;
-    QString percentLucro;
+    double precoFornecedor;
+    double percentLucro;
     QString ncm;
     QString cest;
-    QString aliquotaIcms;
+    double aliquotaIcms;
     QString csosn;
     QString pis;
 };

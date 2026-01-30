@@ -1,5 +1,5 @@
-#ifndef INSERIRPRODUTO_SERVICE_H
-#define INSERIRPRODUTO_SERVICE_H
+#ifndef PRODUTO_SERVICE_H
+#define PRODUTO_SERVICE_H
 
 #include <QSqlDatabase>
 #include <QLocale>
@@ -18,7 +18,7 @@ enum class InserirProdutoErro {
     PrecoInvalido
 };
 
-class InserirProduto_Service
+class Produto_Service
 {
 public:
   struct Resultado {
@@ -26,7 +26,7 @@ public:
     InserirProdutoErro erro = InserirProdutoErro::Nenhum;
     QString msg;
   };
-  explicit InserirProduto_Service(QSqlDatabase db);
+  explicit Produto_Service(QSqlDatabase db);
 
   Resultado validar(const ProdutoDTO &p);
   Resultado inserir(const ProdutoDTO &p);
@@ -35,12 +35,14 @@ public:
   double calcularPrecoFinal(double precoFornecedor, double percentualLucro);
 
   double calcularPercentualLucro(double precoFornecedor, double precoFinal);
+  static double round2(double v);
+  static float round2f(float v);
   private:
   QSqlDatabase db;
   QLocale portugues;
   IbptUtil ibpt;
   ProdutoDTO converterDadosParaDB(const ProdutoDTO &p);
-  InserirProduto_Service::Resultado validarConversao(const ProdutoDTO &p);
+  Produto_Service::Resultado validarConversao(const ProdutoDTO &p);
 };
 
 #endif

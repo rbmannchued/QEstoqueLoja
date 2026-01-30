@@ -5,7 +5,7 @@
 #include <QSqlDatabase>
 #include <QLocale>
 #include "util/ibptutil.h"
-#include "../services/InserirProduto_service.h"
+#include "services/Produto_service.h"
 
 
 namespace Ui {
@@ -48,7 +48,7 @@ private:
     bool atualizando = false; // Flag para evitar loops recursivos
     //bool eventFilter(QObject *watched, QEvent *event) override;
     IbptUtil *util;
-    InserirProduto_Service *service;
+    Produto_Service *service;
 
     void carregarConfiguracoes();
 signals:

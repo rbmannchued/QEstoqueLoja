@@ -147,7 +147,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/delegateambiente.h src/delegateambiente.cpp
         Imagens/recursosImg.qrc
 
-        src/services/InserirProduto_service.h src/services/InserirProduto_service.cpp
+        src/services/Produto_service.h src/services/Produto_service.cpp
         src/dto/Produto_dto.h
 
     )

@@ -72,9 +72,6 @@ MainWindow::MainWindow(QWidget *parent)
     fiscalValues = Configuracao::get_All_Fiscal_Values();
     emailValues = Configuracao::get_All_Email_Values();
 
-    //pega o ponteiro do singleton para usar a lib acbr
-    // acbr = AcbrManager::instance()->nfe();
-
     // mostrar na tabela da aplicaçao a tabela do banco de dados.
     ui->Tview_Produtos->horizontalHeader()->setStyleSheet("background-color: rgb(33, 105, 149)");
     ui->Ledit_Pesquisa->installEventFilter(this);
@@ -196,6 +193,7 @@ void MainWindow::setarIconesJanela(){
     ui->Btn_Relatorios->setIcon(iconBtnRelatorios);
     ui->Btn_Clientes->setIcon(iconClientes);
 }
+
 void MainWindow::atualizarTableview(){
     if(!db.open()){
         qDebug() << "erro ao abrir banco de dados. atualizarTableView";
@@ -253,6 +251,7 @@ void MainWindow::on_Btn_Delete_clicked()
         QMessageBox::warning(this,"Erro","Selecione um produto antes de tentar deletar!");
     }
 }
+
 QString MainWindow::normalizeText(const QString &text) {
     QString normalized = text.normalized(QString::NormalizationForm_D);
     QString result;

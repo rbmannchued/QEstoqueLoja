@@ -55,7 +55,7 @@ InserirProduto::InserirProduto(QWidget *parent)
 
     //desativa campo CEST
     ui->Ledit_CEST->setEnabled(false);
-    service = new InserirProduto_Service(db);
+    service = new Produto_Service(db);
 
 
 }
@@ -131,7 +131,6 @@ void InserirProduto::on_Ledit_CBarras_returnPressed()
     }
 
 
-    // só consulta existência (sem inserir)
     if (service->codigoBarrasExiste(codigo)) {
         QMessageBox::warning(this, "Erro",
                              "Esse código de barras já foi registrado.\n" + codigo);
@@ -148,17 +147,17 @@ void InserirProduto::on_Btn_Enviar_clicked()
 {
     ProdutoDTO p;
 
-    p.quantidade = ui->Ledit_Quant->text();
+    p.quantidade = portugues.toDouble(ui->Ledit_Quant->text());
     p.descricao = MainWindow::normalizeText(ui->Ledit_Desc->text());
-    p.preco = ui->Ledit_PrecoFinal->text();
+    p.preco = portugues.toDouble(ui->Ledit_PrecoFinal->text());
     p.codigoBarras = ui->Ledit_CBarras->text();
     p.nf = ui->Check_Nf->isChecked();
     p.uCom = ui->CBox_UCom->currentText();
-    p.precoFornecedor = ui->Ledit_PrecoFornecedor->text();
-    p.percentLucro = ui->Ledit_PercentualLucro->text();
+    p.precoFornecedor = portugues.toDouble(ui->Ledit_PrecoFornecedor->text());
+    p.percentLucro = portugues.toDouble(ui->Ledit_PercentualLucro->text());
     p.ncm = ui->Ledit_NCM->text();
     p.cest = ui->Ledit_CEST->text();
-    p.aliquotaIcms = ui->Ledit_Aliquota->text();
+    p.aliquotaIcms = portugues.toDouble(ui->Ledit_Aliquota->text());
     p.csosn = ui->Ledit_CSOSN->text();
     p.pis = ui->Ledit_PIS->text();
 

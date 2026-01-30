@@ -11,9 +11,11 @@ QSqlDatabase TestDbFactory::create()
 
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", connName);
 
-    // arquivo temporário real
+    // // arquivo temporário real
     QString path = QDir::tempPath() + "/qestoque_test_" + connName + ".db";
     db.setDatabaseName(path);
+
+    // db.setDatabaseName(":memory:");
 
     if (!db.open()) {
         qFatal("Falha ao abrir banco de teste");
