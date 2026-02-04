@@ -20,9 +20,8 @@
 #include "configuracao.h"
 #include "subclass/customlineedit.h"
 #include "nota/acbrmanager.h"
+#include "../services/Produto_service.h"
 
-
-//#include "vendas.h"
 
 #define VERSAO_QE "2.1.0"
 
@@ -38,7 +37,7 @@ public:
 
 
     QSqlDatabase db;
-    QSqlQueryModel* model = new QSqlQueryModel;
+    QSqlQueryModel* model = nullptr;
     void atualizarTableview();
     void imprimirEtiqueta(int quant, QString codBar = "1", QString desc = "null",  QString preco = "");
     MainWindow(QWidget *parent = nullptr);
@@ -118,6 +117,7 @@ private:
     QMap<QString, QString> fiscalValues;
     QMap<QString, QString> empresaValues;
     QMap<QString, QString> emailValues;
+    Produto_Service *produtoService;
 
 
     void setarIconesJanela();

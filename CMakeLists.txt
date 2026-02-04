@@ -149,6 +149,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 
         src/services/Produto_service.h src/services/Produto_service.cpp
         src/dto/Produto_dto.h
+        src/repository/Produto_repository.h
+        src/repository/Produto_repository.cpp
 
     )
 

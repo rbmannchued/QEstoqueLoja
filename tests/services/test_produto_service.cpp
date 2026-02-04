@@ -126,7 +126,7 @@ void TestProdutoService::erro_codigo_barras_existente()
     auto r2 = service.inserir(p);
 
     QVERIFY(!r2.ok);
-    QCOMPARE(r2.erro, InserirProdutoErro::CodigoBarrasExistente);
+    QCOMPARE(r2.erro, ProdutoErro::CodigoBarrasExistente);
 }
 
 void TestProdutoService::erro_preco_invalido()
@@ -152,7 +152,7 @@ void TestProdutoService::erro_preco_invalido()
     auto r = service.inserir(p);
 
     QVERIFY(!r.ok);
-    QCOMPARE(r.erro, InserirProdutoErro::PrecoInvalido);
+    QCOMPARE(r.erro, ProdutoErro::PrecoInvalido);
 }
 
 void TestProdutoService::erro_quantidade_invalida()
@@ -178,7 +178,7 @@ void TestProdutoService::erro_quantidade_invalida()
     auto r = service.inserir(p);
 
     QVERIFY(!r.ok);
-    QCOMPARE(r.erro, InserirProdutoErro::QuantidadeInvalida);
+    QCOMPARE(r.erro, ProdutoErro::QuantidadeInvalida);
 }
 
 void TestProdutoService::erro_ncm_nf()
@@ -204,7 +204,7 @@ void TestProdutoService::erro_ncm_nf()
     auto r = service.inserir(p);
 
     QVERIFY(!r.ok);
-    QCOMPARE(r.erro, InserirProdutoErro::NcmInvalido);
+    QCOMPARE(r.erro, ProdutoErro::NcmInvalido);
 }
 
 void TestProdutoService::cleanup()

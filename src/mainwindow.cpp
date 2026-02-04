@@ -49,13 +49,19 @@ MainWindow::MainWindow(QWidget *parent)
 
     QCoreApplication::setApplicationVersion("v2.3.0");
 
+    model = new QSqlQueryModel(this);
+
+
     SchemaManager *schemaManager = new SchemaManager(this, 7);
     //config versao 6
     connect(schemaManager, &SchemaManager::dbVersao6, this,
             &MainWindow::atualizarConfigAcbr);
     schemaManager->update();
-
     db = QSqlDatabase::database();
+
+
+    produtoService = new Produto_Service(db);
+
 
     // configuracao do modelo e view produtos
     ui->Tview_Produtos->setModel(model);
@@ -146,6 +152,7 @@ MainWindow::MainWindow(QWidget *parent)
         qDebug() << "Nao consultado DFE";
 
     }
+
 }
 
 MainWindow::~MainWindow()
@@ -155,23 +162,9 @@ MainWindow::~MainWindow()
 
 void MainWindow::mostrarProdutoPorCodigoBarras(const QString &codigo)
 {
-    if (codigo.trimmed().isEmpty())
-        return;
+    model = produtoService->getProdutoPeloCodigo(codigo);
+    ui->Tview_Produtos->setModel(model);
 
-    QString sql = QString(
-                      "SELECT * FROM produtos WHERE codigo_barras = '%1' ORDER BY id DESC"
-                      ).arg(codigo);
-
-    model->setQuery(sql);
-
-    // // seleciona a primeira linha automaticamente
-    // if (model->rowCount() > 0) {
-    //     QModelIndex firstIndex = model->index(0, 0);
-    //     ui->Tview_Produtos->selectionModel()->select(
-    //         firstIndex, QItemSelectionModel::ClearAndSelect
-    //         );
-    //     ui->Tview_Produtos->scrollTo(firstIndex);
-    // }
 }
 
 void MainWindow::setarIconesJanela(){
@@ -194,12 +187,10 @@ void MainWindow::setarIconesJanela(){
     ui->Btn_Clientes->setIcon(iconClientes);
 }
 
-void MainWindow::atualizarTableview(){
-    if(!db.open()){
-        qDebug() << "erro ao abrir banco de dados. atualizarTableView";
-    }
-    model->setQuery("SELECT * FROM produtos ORDER BY id DESC");
-    db.close();
+void MainWindow::atualizarTableview()
+{
+    model = produtoService->listarProdutos();
+    ui->Tview_Produtos->setModel(model);
 }
 
 
@@ -226,22 +217,12 @@ void MainWindow::on_Btn_Delete_clicked()
     );
     // Verifica a resposta do usuário
     if (resposta == QMessageBox::Yes) {
-
-        // remover registro do banco de dados
-        if(!db.open()){
-            qDebug() << "erro ao abrir banco de dados. botao deletar.";
-        }
-        QSqlQuery query;
-
-        query.prepare("DELETE FROM produtos WHERE id = :valor1");
-        query.bindValue(":valor1", productId);
-        if (query.exec()) {
-            qDebug() << "Delete bem-sucedido!";
-        } else {
-            qDebug() << "Erro no Delete: ";
+        auto resultado = produtoService->deletar(productId);
+        if(!resultado.ok){
+            QMessageBox::warning(this,"Erro","Ocorreu um erro ao deletar o produto");
+            return;
         }
         atualizarTableview();
-        db.close();
     }
     else {
         // O usuário escolheu não deletar o produto
@@ -328,6 +309,7 @@ void MainWindow::on_Btn_Pesquisa_clicked()
     if (model->lastError().isValid()) {
         qDebug() << "Erro ao executar consulta:" << model->lastError().text();
     }
+    ui->Tview_Produtos->setModel(model);
 
 
     db.close();

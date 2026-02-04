@@ -28,7 +28,6 @@ set(TEST_SOURCES
 # ==============================
 # Executável de testes
 # ==============================
-
 add_executable(QEstoqueLojaTests
     ${TEST_SOURCES}
 
@@ -37,6 +36,8 @@ add_executable(QEstoqueLojaTests
     ${CMAKE_SOURCE_DIR}/src/services/Produto_service.cpp
     ${CMAKE_SOURCE_DIR}/src/util/ibptutil.cpp
     services/test_produto_service.h
+    ${CMAKE_SOURCE_DIR}/src/repository/Produto_repository.cpp
+
 )
 
 # ==============================

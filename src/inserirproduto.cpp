@@ -167,7 +167,7 @@ void InserirProduto::on_Btn_Enviar_clicked()
 
         switch (r.erro) {
 
-        case InserirProdutoErro::NcmAviso: {
+        case ProdutoErro::NcmAviso: {
             auto reply = QMessageBox::question(
                 this,
                 "Aviso",

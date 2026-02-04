@@ -5,8 +5,10 @@
 #include <QLocale>
 #include "../dto/Produto_dto.h"
 #include "../util/ibptutil.h"
+#include <QSqlQueryModel>
+#include "../repository/Produto_repository.h"
 
-enum class InserirProdutoErro {
+enum class ProdutoErro {
     Nenhum,
     CampoVazio,
     CodigoBarrasExistente,
@@ -23,7 +25,7 @@ class Produto_Service
 public:
   struct Resultado {
     bool ok;
-    InserirProdutoErro erro = InserirProdutoErro::Nenhum;
+    ProdutoErro erro = ProdutoErro::Nenhum;
     QString msg;
   };
   explicit Produto_Service(QSqlDatabase db);
@@ -37,12 +39,16 @@ public:
   double calcularPercentualLucro(double precoFornecedor, double precoFinal);
   static double round2(double v);
   static float round2f(float v);
+  QSqlQueryModel *listarProdutos();
+  QSqlQueryModel *getProdutoPeloCodigo(const QString &codigoBarras);
+  Resultado deletar(const QString &id);
   private:
   QSqlDatabase db;
   QLocale portugues;
   IbptUtil ibpt;
   ProdutoDTO converterDadosParaDB(const ProdutoDTO &p);
   Produto_Service::Resultado validarConversao(const ProdutoDTO &p);
+  Produto_Repository *repo;
 };
 
 #endif
