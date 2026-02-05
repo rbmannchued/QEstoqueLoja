@@ -128,3 +128,103 @@ QSqlQueryModel* Produto_Service::listarProdutos()
 QSqlQueryModel* Produto_Service::getProdutoPeloCodigo(const QString &codigoBarras){
     return repo->getProdutoPeloCodigo(codigoBarras);
 }
+
+
+QString Produto_Service::normalizeText(const QString &text) {
+    QString normalized = text.normalized(QString::NormalizationForm_D);
+    QString result;
+    for (const QChar &c : normalized) {
+        if (!c.isMark()) {
+            QChar replacement;
+            switch (c.unicode()) {
+            case ';':
+            case '\'':
+            case '\"':
+                // Remover os caracteres ; ' "
+                continue;
+            case '<':
+                replacement = '(';
+                break;
+            case '>':
+                replacement = ')';
+                break;
+            case '&':
+                replacement = 'e';
+                break;
+            default:
+                result.append(c.toUpper());
+                continue;
+            }
+            result.append(replacement);
+        }
+    }
+    return result;
+
+}
+
+QSqlQueryModel* Produto_Service::pesquisar(const QString &texto)
+{
+    QString normalizado = normalizeText(texto);
+
+    if (normalizado.trimmed().isEmpty()) {
+        return repo->listarProdutos(); // fallback padrão
+    }
+
+    QStringList palavras = normalizado.split(" ", Qt::SkipEmptyParts);
+
+    return repo->pesquisar(palavras, normalizado);
+}
+
+Produto_Service::Resultado Produto_Service::alterarVerificarCodigoBarras(const ProdutoDTO &p,
+                                                                         const QString &codigo,
+                                                                         const QString &id){
+    Resultado v1 = validar(p);
+    if (!v1.ok) return v1;
+
+    Resultado v2 = validarConversao(p);
+    if (!v2.ok) return v2;
+
+    if(codigo != p.codigoBarras){
+        if (repo->codigoBarrasExiste(p.codigoBarras)) {
+            return {false, ProdutoErro::CodigoBarrasExistente,
+                    "Esse código de barras já foi registrado."};
+        }
+
+    }
+
+
+
+    ProdutoDTO dbData = converterDadosParaDB(p);
+
+    QString erroSQL;
+    if (!repo->alterar(dbData, id, erroSQL)) {
+        return {false, ProdutoErro::ErroBanco, erroSQL};
+    }
+
+    return {true, ProdutoErro::Nenhum, ""};
+}
+
+Produto_Service::Resultado Produto_Service::alterar(const ProdutoDTO &p, const QString &id){
+    Resultado v1 = validar(p);
+    if (!v1.ok) return v1;
+
+    Resultado v2 = validarConversao(p);
+    if (!v2.ok) return v2;
+
+    if (repo->codigoBarrasExiste(p.codigoBarras)) {
+        return {false, ProdutoErro::CodigoBarrasExistente,
+                "Esse código de barras já foi registrado."};
+    }
+
+
+    ProdutoDTO dbData = converterDadosParaDB(p);
+
+    QString erroSQL;
+    if (!repo->alterar(dbData, id, erroSQL)) {
+        return {false, ProdutoErro::ErroBanco, erroSQL};
+    }
+
+    return {true, ProdutoErro::Nenhum, ""};
+}
+
+

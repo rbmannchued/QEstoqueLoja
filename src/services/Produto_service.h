@@ -42,13 +42,16 @@ public:
   QSqlQueryModel *listarProdutos();
   QSqlQueryModel *getProdutoPeloCodigo(const QString &codigoBarras);
   Resultado deletar(const QString &id);
-  private:
+  static QString normalizeText(const QString &text);
+  QSqlQueryModel *pesquisar(const QString &texto);
   QSqlDatabase db;
   QLocale portugues;
   IbptUtil ibpt;
   ProdutoDTO converterDadosParaDB(const ProdutoDTO &p);
   Produto_Service::Resultado validarConversao(const ProdutoDTO &p);
   Produto_Repository *repo;
+  Resultado alterar(const ProdutoDTO &p, const QString &id);
+  Resultado alterarVerificarCodigoBarras(const ProdutoDTO &p, const QString &codigo, const QString &id);
 };
 
 #endif
