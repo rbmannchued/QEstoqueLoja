@@ -125,16 +125,16 @@ bool Produto_Repository::deletar(const QString &id, QString &erroSQL)
     }
 
     QSqlQuery query(db);
-    query.prepare(
-        "DELETE FROM produtos WHERE id = :id"
-        );
-
+    query.prepare("DELETE FROM produtos WHERE id = :id");
     query.bindValue(":id", id);
 
     if (!query.exec()) {
         erroSQL = query.lastError().text();
-        qDebug() << "[SQL ERROR]" << erroSQL;
-        qDebug() << "[SQL QUERY]" << query.lastQuery();
+        return false;
+    }
+
+    if (query.numRowsAffected() == 0) {
+        erroSQL = "Produto não encontrado para exclusão.";
         return false;
     }
 

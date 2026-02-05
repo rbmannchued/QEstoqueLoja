@@ -19,6 +19,9 @@ private slots:
     void erro_ncm_nf();
     void cleanup();
     void inserir_produto_errado();
+    void deletar_produto_ok();
+    void deletar_produto_inexistente();
+    void alterar_produto_ok();
 };
 
 #endif // TEST_PRODUTO_SERVICE_H

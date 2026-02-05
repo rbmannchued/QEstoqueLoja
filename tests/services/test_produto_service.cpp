@@ -207,6 +207,125 @@ void TestProdutoService::erro_ncm_nf()
     QCOMPARE(r.erro, ProdutoErro::NcmInvalido);
 }
 
+void TestProdutoService::deletar_produto_ok()
+{
+    db = TestDbFactory::create();
+    Produto_Service service(db);
+
+    // inserir produto
+    ProdutoDTO p;
+    p.quantidade = 5;
+    p.descricao = "Produto Delete";
+    p.preco = 10;
+    p.codigoBarras = "DEL123";
+    p.nf = false;
+    p.uCom = "UN";
+    p.precoFornecedor = 6;
+    p.percentLucro = 20;
+    p.ncm = "";
+    p.cest = "";
+    p.aliquotaIcms = 18;
+    p.csosn = "102";
+    p.pis = "1";
+
+    auto r = service.inserir(p);
+    QVERIFY(r.ok);
+
+    // pegar id
+    QSqlQuery q(db);
+    QVERIFY(q.exec("SELECT id FROM produtos WHERE codigo_barras = 'DEL123'"));
+    QVERIFY(q.next());
+    QString id = q.value(0).toString();
+
+    // deletar
+    auto rd = service.deletar(id);
+    QVERIFY(rd.ok);
+
+    // validar no banco
+    QSqlQuery q2(db);
+    QVERIFY(q2.exec("SELECT COUNT(*) FROM produtos WHERE id = " + id));
+    QVERIFY(q2.next());
+
+    int count = q2.value(0).toInt();
+    QCOMPARE(count, 0);
+}
+
+void TestProdutoService::deletar_produto_inexistente()
+{
+    db = TestDbFactory::create();
+    Produto_Service service(db);
+
+    auto r = service.deletar("999999"); // id inexistente
+    QVERIFY(!r.ok);
+    QCOMPARE(r.erro, ProdutoErro::ErroBanco);
+}
+
+
+void TestProdutoService::alterar_produto_ok()
+{
+    db = TestDbFactory::create();
+    Produto_Service service(db);
+
+    // inserir produto original
+    ProdutoDTO p;
+    p.quantidade = 10;
+    p.descricao = "Produto Original";
+    p.preco = 10;
+    p.codigoBarras = "ALT001";
+    p.nf = false;
+    p.uCom = "UN";
+    p.precoFornecedor = 5;
+    p.percentLucro = 10;
+    p.ncm = "";
+    p.cest = "";
+    p.aliquotaIcms = 18;
+    p.csosn = "102";
+    p.pis = "1";
+
+    QVERIFY(service.inserir(p).ok);
+
+    // pegar id
+    QSqlQuery q(db);
+    QVERIFY(q.exec("SELECT id FROM produtos WHERE codigo_barras = 'ALT001'"));
+    QVERIFY(q.next());
+    QString id = q.value(0).toString();
+
+    // novo produto (alterado)
+    ProdutoDTO novo;
+    novo.quantidade = 20;
+    novo.descricao = "Produto Alterado";
+    novo.preco = 25;
+    novo.codigoBarras = "ALT001"; // mesmo código
+    novo.nf = false;
+    novo.uCom = "CX";
+    novo.precoFornecedor = 15;
+    novo.percentLucro = 30;
+    novo.ncm = "";
+    novo.cest = "";
+    novo.aliquotaIcms = 12;
+    novo.csosn = "500";
+    novo.pis = "2";
+
+    auto r = service.alterarVerificarCodigoBarras(novo, "ALT001", id);
+    QVERIFY(r.ok);
+
+    // validar banco
+    QSqlQuery q2(db);
+    QVERIFY(q2.exec("SELECT * FROM produtos WHERE id = " + id));
+    QVERIFY(q2.next());
+
+    QCOMPARE(q2.value("descricao").toString(), QString("PRODUTO ALTERADO"));
+    QCOMPARE(q2.value("quantidade").toDouble(), 20.0);
+    QCOMPARE(q2.value("preco").toDouble(), 25.0);
+    QCOMPARE(q2.value("un_comercial").toString(), QString("CX"));
+    QCOMPARE(q2.value("preco_fornecedor").toDouble(), 15.0);
+    QCOMPARE(q2.value("porcent_lucro").toDouble(), 30.0);
+    QCOMPARE(q2.value("aliquota_imposto").toDouble(), 12.0);
+    QCOMPARE(q2.value("csosn").toString(), QString("500"));
+}
+
+
+
 void TestProdutoService::cleanup()
 {
     QSqlQuery q(db);
