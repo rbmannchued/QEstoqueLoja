@@ -68,7 +68,7 @@ private:
     QAction *actionMenuDeletarProd;
     QStringList clientesComId;
     QMap <QString, QString> fiscalValues;
-    int getIdProdSelected();
+    QString getIdProdSelected();
     void verProd();
 signals:
     void vendaConcluida();

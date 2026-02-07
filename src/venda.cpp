@@ -17,6 +17,7 @@
 #include <QStringListModel>
 #include "inserircliente.h"
 #include "infojanelaprod.h"
+#include "../services/Produto_service.h"
 
 
 venda::venda(QWidget *parent) :
@@ -387,7 +388,7 @@ void venda::on_Btn_Pesquisa_clicked()
 {
 
     QString inputText = ui->Ledit_Pesquisa->text();
-    QString normalizadoPesquisa = MainWindow::normalizeText(inputText);
+    QString normalizadoPesquisa = Produto_Service::normalizeText(inputText);
 
     // Dividir a string em palavras usando split por espaços em branco
     QStringList palavras = normalizadoPesquisa.split(" ", Qt::SkipEmptyParts);
@@ -648,7 +649,7 @@ void venda::on_Btn_NovoCliente_clicked()
     connect(inserirCliente, &InserirCliente::clienteInserido, this, &venda::selecionarClienteNovo);
     inserirCliente->show();
 }
-int venda::getIdProdSelected(){
+QString venda::getIdProdSelected(){
     QItemSelectionModel *selectionModel = ui->Tview_Produtos->selectionModel();
     QModelIndexList selectedIndexes = selectionModel->selectedIndexes();
 
@@ -656,13 +657,13 @@ int venda::getIdProdSelected(){
         int selectedRow = selectedIndexes.first().row();
         QModelIndex idIndex = ui->Tview_Produtos->model()->index(selectedRow, 0);
 
-        int id = ui->Tview_Produtos->model()->data(idIndex).toInt();
+        QString id = ui->Tview_Produtos->model()->data(idIndex).toString();
         return id;
     }
 }
 
 void venda::verProd(){
-    int id = getIdProdSelected();
+    QString id = getIdProdSelected();
     InfoJanelaProd *janelaProd = new InfoJanelaProd(this, id);
     janelaProd->show();
 }

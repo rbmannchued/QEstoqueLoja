@@ -23,7 +23,7 @@
 #include "../services/Produto_service.h"
 
 
-#define VERSAO_QE "2.1.0"
+#define VERSAO_QE "2.4.0"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -39,19 +39,13 @@ public:
     QSqlDatabase db;
     QSqlQueryModel* model = nullptr;
     void atualizarTableview();
-    void imprimirEtiqueta(int quant, QString codBar = "1", QString desc = "null",  QString preco = "");
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     QLocale portugues;
     QIcon iconAlterarProduto, iconAddProduto, iconBtnVenda, iconDelete, iconPesquisa, iconBtnRelatorios,
         iconImpressora, iconClientes;
-    QString gerarNumero();
-    static QString normalizeText(const QString &text);
-
 
 public slots:
-   void on_actionTodos_Produtos_triggered();
-
    void atualizarTableviewComQuery(QString &query);
 
 private slots:
@@ -65,8 +59,6 @@ private slots:
     void on_Btn_Venda_clicked();
 
     void on_Btn_Relatorios_clicked();
-    
-    void on_actionGerar_Relat_rio_CSV_triggered();
 
     void on_actionRealizar_Venda_triggered();
 
@@ -76,9 +68,6 @@ private slots:
 
     void imprimirEtiqueta1();
     void imprimirEtiqueta3();
-
-
-    void on_actionApenas_NF_triggered();
 
     void on_actionConfig_triggered();
 
@@ -127,7 +116,7 @@ private:
     void mostrarProdutoPorCodigoBarras(const QString &codigo);
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
-    int getIdProdSelected();
+    QString getIdProdSelected();
 signals:
     void localSetado();
 

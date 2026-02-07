@@ -43,7 +43,6 @@ private:
      QMap<QString, QString> produtoValues;
     QSet<QString> generatedNumbers;
     QLocale portugues;
-    QString gerarNumero();
     QSqlDatabase db = QSqlDatabase::database();
     bool atualizando = false; // Flag para evitar loops recursivos
     //bool eventFilter(QObject *watched, QEvent *event) override;

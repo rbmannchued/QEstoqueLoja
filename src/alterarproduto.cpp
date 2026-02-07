@@ -5,6 +5,7 @@
 #include <QMessageBox>
 #include <QDoubleValidator>
 #include "util/NfUtilidades.h"
+#include "util/codigobarrasutil.h"
 
 AlterarProduto::AlterarProduto(QWidget *parent) :
     QDialog(parent),
@@ -124,7 +125,8 @@ AlterarProduto::~AlterarProduto()
 
 void AlterarProduto::on_Btn_GerarCod_clicked()
 {
-    ui->Ledit_AltBarras->setText(janelaPrincipal->gerarNumero());
+    QString codigo = CodigoBarrasUtil::gerarNumeroCodigoBarrasNaoFiscal();
+    ui->Ledit_AltBarras->setText(codigo);
 }
 
 void AlterarProduto::on_Ledit_AltNCM_editingFinished()

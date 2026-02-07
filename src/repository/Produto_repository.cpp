@@ -236,3 +236,49 @@ bool Produto_Repository::alterar(
 }
 
 
+QStringList Produto_Repository::listarLocais()
+{
+    QStringList sugestoes;
+
+    if (!db.isOpen()) {
+        if (!db.open()) {
+            qDebug() << "Erro ao abrir banco (listarLocais)";
+            return sugestoes;
+        }
+    }
+
+    QSqlQuery query(db);
+    if (query.exec("SELECT DISTINCT local FROM produtos WHERE local IS NOT NULL AND TRIM(local) != ''")) {
+        while (query.next()) {
+            sugestoes << query.value(0).toString();
+        }
+    } else {
+        qDebug() << "Erro SQL listarLocais:" << query.lastError().text();
+    }
+
+    return sugestoes;
+}
+
+bool Produto_Repository::atualizarLocal(int id, const QString &local, QString &erroSQL)
+{
+    if (!db.isOpen()) {
+        if (!db.open()) {
+            erroSQL = "Erro ao abrir banco";
+            return false;
+        }
+    }
+
+    QSqlQuery query(db);
+    query.prepare("UPDATE produtos SET local = :local WHERE id = :id");
+    query.bindValue(":local", local);
+    query.bindValue(":id", id);
+
+    if (!query.exec()) {
+        erroSQL = query.lastError().text();
+        return false;
+    }
+
+    return true;
+}
+
+

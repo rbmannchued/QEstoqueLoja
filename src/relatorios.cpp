@@ -31,6 +31,7 @@
 #include <QSql>
 #include "configuracao.h"
 #include <QStandardPaths>
+#include "../services/Produto_service.h"
 //#include <QDebug>;
 
 relatorios::relatorios(QWidget *parent)
@@ -1115,7 +1116,7 @@ void relatorios::on_Ledit_PesquisaProduto_textChanged(const QString &arg1)
 {
 
     QString inputText = ui->Ledit_PesquisaProduto->text();
-    QString normalizadoPesquisa = MainWindow::normalizeText(inputText);
+    QString normalizadoPesquisa = Produto_Service::normalizeText(inputText);
 
     // Dividir a string em palavras usando split por espaços em branco
     QStringList palavras = normalizadoPesquisa.split(" ", Qt::SkipEmptyParts);

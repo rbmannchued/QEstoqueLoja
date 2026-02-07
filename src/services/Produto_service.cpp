@@ -227,4 +227,22 @@ Produto_Service::Resultado Produto_Service::alterar(const ProdutoDTO &p, const Q
     return {true, ProdutoErro::Nenhum, ""};
 }
 
+QStringList Produto_Service::obterSugestoesLocal()
+{
+    return repo->listarLocais();
+}
+
+Produto_Service::Resultado Produto_Service::atualizarLocalProduto(int id, const QString &novoLocal)
+{
+    if (novoLocal.trimmed().isEmpty()) {
+        return {false, ProdutoErro::CampoVazio, "Local não pode ser vazio."};
+    }
+
+    QString erroSQL;
+    if (!repo->atualizarLocal(id, novoLocal.trimmed(), erroSQL)) {
+        return {false, ProdutoErro::ErroBanco, erroSQL};
+    }
+
+    return {true, ProdutoErro::Nenhum, ""};
+}
 

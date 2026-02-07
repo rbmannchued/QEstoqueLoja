@@ -19,7 +19,6 @@
 #include <QModelIndex>
 #include <QMenu>
 #include <QFontDatabase>
-#include <zint.h>
 #include "delegateprecof2.h"
 #include "util/pdfexporter.h"
 #include "clientes.h"
@@ -40,6 +39,8 @@
 #include "janelaemailcontador.h"
 #include "sobre.h"
 #include "monitorfiscal.h"
+#include "../util/printutil.h"
+#include "../services/barcode_service.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -233,90 +234,19 @@ void MainWindow::on_Btn_Delete_clicked()
     }
 }
 
-QString MainWindow::normalizeText(const QString &text) {
-    QString normalized = text.normalized(QString::NormalizationForm_D);
-    QString result;
-    for (const QChar &c : normalized) {
-        if (!c.isMark()) {
-            QChar replacement;
-            switch (c.unicode()) {
-            case ';':
-            case '\'':
-            case '\"':
-                // Remover os caracteres ; ' "
-                continue;
-            case '<':
-                replacement = '(';
-                break;
-            case '>':
-                replacement = ')';
-                break;
-            case '&':
-                replacement = 'e';
-                break;
-            default:
-                result.append(c.toUpper());
-                continue;
-            }
-            result.append(replacement);
-        }
-    }
-    return result;
-
-
-
-}
-
 void MainWindow::on_Btn_Pesquisa_clicked()
 {
     QString inputText = ui->Ledit_Pesquisa->text();
-    QString normalizadoPesquisa = normalizeText(inputText);
 
-    // Dividir a string em palavras usando split por espaços em branco
-    QStringList palavras = normalizadoPesquisa.split(" ", Qt::SkipEmptyParts);
+    auto model = produtoService->pesquisar(inputText);
 
-    // Exibir as palavras separadas no console (opcional)
-    // qDebug() << "Palavras separadas:";
-    // for (const QString& palavra : palavras) {
-    //     qDebug() << palavra;
-    // }
-
-    if (!db.open()) {
-        qDebug() << "Erro ao abrir banco de dados. Botão Pesquisar.";
+    if (!model) {
+        QMessageBox::warning(this, "Erro", "Erro ao realizar a pesquisa.");
         return;
     }
 
-
-
-    // Construir consulta SQL dinâmica
-    QString sql = "SELECT * FROM produtos WHERE ";
-    QStringList conditions;
-    if (palavras.length() > 1){
-        for (const QString &palavra : palavras) {
-            conditions << QString("descricao LIKE '%%1%'").arg(palavra);
-
-        }
-
-        sql += conditions.join(" AND ");
-
-    }else{
-        sql += "descricao LIKE '%" + normalizadoPesquisa + "%'  OR codigo_barras LIKE '%" + normalizadoPesquisa + "%'";
-    }
-    sql += " ORDER BY id DESC";
-
-    // Executar a consulta
-    model->setQuery(sql, db);
-    if (model->lastError().isValid()) {
-        qDebug() << "Erro ao executar consulta:" << model->lastError().text();
-    }
     ui->Tview_Produtos->setModel(model);
-
-
-    db.close();
 }
-
-
-
 
 void MainWindow::on_Btn_Alterar_clicked()
 {
@@ -388,11 +318,7 @@ void MainWindow::on_Btn_Venda_clicked()
     connect(vendas, &Vendas::vendaConcluidaVendas, this, &MainWindow::atualizarTableview);
 
     vendas->show();
-
-
 }
-
-
 
 void MainWindow::on_Btn_Relatorios_clicked()
 {
@@ -408,11 +334,19 @@ void MainWindow::imprimirEtiqueta1(){
     QVariant descVariant = ui->Tview_Produtos->model()->data(ui->Tview_Produtos->model()->index(selectedIndex.row(), 2));
     QVariant precoVariant = ui->Tview_Produtos->model()->data(ui->Tview_Produtos->model()->index(selectedIndex.row(), 3));
 
+    QString erro;
 
-    imprimirEtiqueta(1, barrasVariant.toString(), descVariant.toString(), portugues.toString(precoVariant.toFloat()));
+    QImage barcode = Barcode_service::gerarCodigoBarras(barrasVariant.toString(), &erro);
+    if (barcode.isNull()) {
+        QMessageBox::warning(this, "Erro", erro);
+        return;
+    }
 
-
+    if (!PrintUtil::imprimirEtiquetas(this, 1, barcode, descVariant.toString(), precoVariant.toDouble(), &erro)) {
+        QMessageBox::warning(this, "Erro", erro);
+    }
 }
+
 void MainWindow::imprimirEtiqueta3(){
     QItemSelectionModel *selectionModel = ui->Tview_Produtos->selectionModel();
     QModelIndex selectedIndex = selectionModel->selectedIndexes().first();
@@ -420,152 +354,19 @@ void MainWindow::imprimirEtiqueta3(){
     QVariant descVariant = ui->Tview_Produtos->model()->data(ui->Tview_Produtos->model()->index(selectedIndex.row(), 2));
     QVariant precoVariant = ui->Tview_Produtos->model()->data(ui->Tview_Produtos->model()->index(selectedIndex.row(), 3));
 
+    QString erro;
 
-    imprimirEtiqueta(3, barrasVariant.toString(), descVariant.toString(), portugues.toString(precoVariant.toFloat()));
-
-
-}
-void MainWindow::imprimirEtiqueta(int quant, QString codBar, QString desc, QString preco){
-    if (codBar == ""){
-        QMessageBox::warning(this, "Erro", "código de barras inexistente");
-        return;
-    }
-    // criar codigo de barras -----------
-    QByteArray codBarBytes = codBar.toUtf8();
-    const unsigned char* data = reinterpret_cast<const unsigned char*>(codBarBytes.constData());
-
-    struct zint_symbol *barcode = ZBarcode_Create();
-    if (!barcode) {
-        qDebug() << "Erro ao criar o objeto de código de barras.";
+    QImage barcode = Barcode_service::gerarCodigoBarras(barrasVariant.toString(), &erro);
+    if (barcode.isNull()) {
+        QMessageBox::warning(this, "Erro", erro);
         return;
     }
 
-    // Definir o tipo de simbologia (Code128 neste caso)
-    barcode->symbology = BARCODE_CODE128;
-    barcode->output_options = BOLD_TEXT;
-
-    // Definir os dados a serem codificados
-    int error = ZBarcode_Encode(barcode, (unsigned char*)data, 0);
-    if (error != 0) {
-        qDebug() << "Erro ao codificar os dados: " << barcode->errtxt;
-        ZBarcode_Delete(barcode);
-
-    }
-
-    // Gerar a imagem do código de barras e salvar como arquivo PNG ou GIF
-    error = ZBarcode_Buffer(barcode, 0);
-    if (error != 0) {
-        qDebug() << "Erro ao criar o buffer da imagem: " << barcode->errtxt;
-        ZBarcode_Delete(barcode);
-        return ;
+    if (!PrintUtil::imprimirEtiquetas(this, 3, barcode, descVariant.toString(), precoVariant.toDouble(), &erro)) {
+        QMessageBox::warning(this, "Erro", erro);
     }
 
 
-    ZBarcode_Print(barcode, 0);
-    // Limpar o objeto de código de barras
-    ZBarcode_Delete(barcode);
-
-    qDebug() << "Código de barras gerado com sucesso e salvo como out.png/out.gif";
-    QImage codimage("out.gif");
-    //  impressão ---------
-    QPrinter printer;
-
-    printer.setPageSize(QPageSize(QSizeF(80, 2000), QPageSize::Millimeter));
-    // printer.setCopyCount(quant);
-
-    QPrintDialog dialog(&printer, this);
-    if(dialog.exec() == QDialog::Rejected) return;
-
-    QPainter painter;
-    painter.begin(&printer);
-
-    // QByteArray cutCommand;
-    // cutCommand.append(0x1D);
-    // cutCommand.append('V');
-
-    int ypos[2] = {5, 53};
-    const int espacoEntreItens = 20;
-
-    for(int i =0; i<quant; i++){
-
-
-        if(i > 0){
-            for(int j = 0; j < 2; j ++){
-                ypos[j] = ypos[j] + 51;
-            };
-        }
-
-        QRect descRect(0,ypos[0],145,32);
-        QFont fontePainter = painter.font();
-        fontePainter.setPointSize(10);
-        painter.setFont(fontePainter);
-        painter.drawText(descRect,Qt::TextWordWrap, desc);
-        fontePainter.setBold(true);
-        painter.setFont(fontePainter);
-        painter.drawText(0, ypos[1], "Preço: R$" + portugues.toString(portugues.toFloat(preco), 'f', 2));
-        fontePainter.setBold(false);
-        painter.setFont(fontePainter);
-
-        QRect codImageRect(140,ypos[0], 108,50);
-        painter.drawImage(codImageRect, codimage);
-        for(int j = 0; j < 2; j++) {
-            ypos[j] = ypos[j] + espacoEntreItens;
-        }
-
-
-    }
-    painter.end();
-
-
-
-
-
-
-    }
-
-
-
-
-
-
-void MainWindow::on_actionGerar_Relat_rio_CSV_triggered()
-{
-    QString fileName = QFileDialog::getSaveFileName(nullptr, "Salvar Arquivo CSV", "", "Arquivos CSV (*.csv)");
-
-    if (fileName.isEmpty()) {
-        // Se o usuário cancelar a seleção do arquivo, saia da função
-        return;
-    }
-
-    // Abrindo o arquivo CSV para escrita
-    QFile file(fileName);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        qDebug() << "Erro ao abrir o arquivo para escrita.";
-        return;
-    }
-    QTextStream out(&file);
-
-    if (!db.open()) {
-        qDebug() << "Erro ao abrir o banco de dados botao csv.";
-        return;
-    }
-
-    // Executando a consulta para recuperar os itens da tabela
-    QSqlQuery query("SELECT * FROM produtos");
-    out << "ID;Quant;Desc;Preço;CodBarra;NF\n";
-    while (query.next()) {
-        // Escrevendo os dados no arquivo CSV
-        for (int i = 0; i < query.record().count(); ++i) {
-            out << query.value(i).toString();
-            if (i != query.record().count() - 1)
-                out << ";"; // Adicionando ponto e vírgula para separar os campos
-        }
-        out << "\n"; // Adicionando uma nova linha após cada registro
-    }
-
-    // Fechando o arquivo e desconectando do banco de dados
-    file.close();
-    db.close();
 }
 
 
@@ -604,21 +405,6 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
     // Processar o evento padrão
     return QMainWindow::eventFilter(obj, event);
 }
-QString MainWindow::gerarNumero()
-{
-    QString number;
-    do {
-        number = QString("3562%1").arg(QRandomGenerator::global()->bounded(100000), 5, 10, QChar('0'));
-    } while (generatedNumbers.contains(number));
-
-    generatedNumbers.insert(number);
-    // saveGeneratedNumber(number);
-
-    return number;
-}
-
-
-
 
 void MainWindow::on_Tview_Produtos_customContextMenuRequested(const QPoint &pos)
 {
@@ -641,35 +427,6 @@ void MainWindow::on_Tview_Produtos_customContextMenuRequested(const QPoint &pos)
     menu.exec(ui->Tview_Produtos->viewport()->mapToGlobal(pos));
 }
 
-
-
-
-void MainWindow::on_actionTodos_Produtos_triggered()
-{
-
-    // // salva o arquivo
-    QString fileName = QFileDialog::getSaveFileName(this, "Salvar PDF", QString(), "*.pdf");
-     if (fileName.isEmpty())
-         return;
-
-     PDFexporter::exportarTodosProdutosParaPDF(fileName);
-
- }
-
-
-void MainWindow::on_actionApenas_NF_triggered()
-{
-    QString fileName = QFileDialog::getSaveFileName(this, "Salvar PDF", QString(), "*.pdf");
-    if (fileName.isEmpty())
-        return;
-
-    PDFexporter::exportarNfProdutosParaPDF(fileName);
-
-
-
-}
-
-
 void MainWindow::on_actionConfig_triggered()
 {
     Configuracao *configuracao = new Configuracao();
@@ -677,7 +434,6 @@ void MainWindow::on_actionConfig_triggered()
     connect(configuracao, &Configuracao::alterouConfig, this,
             &MainWindow::atualizarConfigAcbr);
 }
-
 
 void MainWindow::on_Ledit_Pesquisa_textChanged(const QString &arg1)
 {
@@ -698,55 +454,48 @@ void MainWindow::atualizarTableviewComQuery(QString &query){
     model->setQuery(query);
 }
 
-void MainWindow::setLocalProd(){
-    QItemSelectionModel *selectionModel = ui->Tview_Produtos->selectionModel();
-    QModelIndexList selectedIndexes = selectionModel->selectedIndexes();
+void MainWindow::setLocalProd()
+{
+    auto *selectionModel = ui->Tview_Produtos->selectionModel();
+    QModelIndexList selected = selectionModel->selectedIndexes();
 
-    if (!selectedIndexes.isEmpty()) {
-        int selectedRow = selectedIndexes.first().row();
-        QModelIndex idIndex = ui->Tview_Produtos->model()->index(selectedRow, 0);
-        QModelIndex localIndex = ui->Tview_Produtos->model()->index(selectedRow, 14);
+    if (selected.isEmpty())
+        return;
 
-        int id = ui->Tview_Produtos->model()->data(idIndex).toInt();
-        QString local = ui->Tview_Produtos->model()->data(localIndex).toString();
-        QSqlQuery query;
-        QStringList sugestoes;
-        if(!db.isOpen()){
-            db.open();
+    int row = selected.first().row();
+
+    QModelIndex idIndex    = ui->Tview_Produtos->model()->index(row, 0);
+    QModelIndex localIndex = ui->Tview_Produtos->model()->index(row, 14);
+
+    int id = ui->Tview_Produtos->model()->data(idIndex).toInt();
+    QString localAtual = ui->Tview_Produtos->model()->data(localIndex).toString();
+
+    // service
+    auto sugestoes = produtoService->obterSugestoesLocal();
+
+    LeditDialog dialog(this);
+    dialog.setWindowTitle("Inserir Texto");
+    dialog.setLabelText("Informe o local do produto:");
+    dialog.setLineEditText(localAtual);
+    dialog.Ledit_info->setMaxLength(60);
+    dialog.setCompleterSuggestions(sugestoes);
+
+    if (dialog.exec() == QDialog::Accepted) {
+        QString novoLocal = dialog.getLineEditText();
+
+        auto res = produtoService->atualizarLocalProduto(id, novoLocal);
+
+        if (!res.ok) {
+            QMessageBox::warning(this, "Erro", res.msg);
+            return;
         }
-        if (query.exec("SELECT DISTINCT local FROM produtos WHERE local IS NOT NULL AND TRIM(local) != ''")) {
-            while (query.next()) {
-                sugestoes << query.value(0).toString();
-            }
-        } else {
-            qDebug() << "Erro ao executar query de locais:" << query.lastError().text();
-        }
 
-        LeditDialog dialog(this);
-        dialog.setWindowTitle("Inserir Texto");
-        dialog.setLabelText("Informe o local do produto:");
-        dialog.setLineEditText(local);
-        dialog.Ledit_info->setMaxLength(60);
-        dialog.setCompleterSuggestions(sugestoes);
-
-        if (dialog.exec() == QDialog::Accepted) {
-            QString novoLocal = dialog.getLineEditText();
-            qDebug() << "Novo local para ID" << id << ":" << novoLocal;
-
-            query.prepare("UPDATE produtos SET local = :novolocal WHERE id = :id ");
-            query.bindValue(":novolocal", novoLocal);
-            query.bindValue(":id", id);
-            if(!query.exec()){
-                qDebug() << "falhou ao executar query update local";
-            }
-            atualizarTableview();
-            emit localSetado();
-
-        }
-        db.close();
+        atualizarTableview();
+        emit localSetado();
     }
 }
-int MainWindow::getIdProdSelected(){
+
+QString MainWindow::getIdProdSelected(){
     QItemSelectionModel *selectionModel = ui->Tview_Produtos->selectionModel();
     QModelIndexList selectedIndexes = selectionModel->selectedIndexes();
 
@@ -754,12 +503,13 @@ int MainWindow::getIdProdSelected(){
         int selectedRow = selectedIndexes.first().row();
         QModelIndex idIndex = ui->Tview_Produtos->model()->index(selectedRow, 0);
 
-        int id = ui->Tview_Produtos->model()->data(idIndex).toInt();
+        QString id = ui->Tview_Produtos->model()->data(idIndex).toString();
         return id;
     }
 }
+
 void MainWindow::verProd(){
-    int id = getIdProdSelected();
+    QString id = getIdProdSelected();
     InfoJanelaProd *janelaProd = new InfoJanelaProd(this, id);
     janelaProd->show();
 }

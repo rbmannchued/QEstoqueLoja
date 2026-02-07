@@ -17,6 +17,8 @@ public:
     bool deletar(const QString &id, QString &erroSQL);
     QSqlQueryModel *pesquisar(const QStringList &palavras, const QString &textoNormalizado);
     bool alterar(const ProdutoDTO &p, const QString &id, QString &erro);
+    QStringList listarLocais();
+    bool atualizarLocal(int id, const QString &local, QString &erroSQL);
 private:
     QSqlDatabase db;
 };

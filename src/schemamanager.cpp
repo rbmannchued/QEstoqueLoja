@@ -9,6 +9,7 @@
 #include <QSqlError>
 #include "configuracao.h"
 #include "mainwindow.h"
+#include "../services/Produto_service.h"
 
 SchemaManager::SchemaManager(QObject *parent, int dbLastVersion)
     : QObject{parent}
@@ -175,7 +176,7 @@ void SchemaManager::update() {
                 QString descricao = query.value(1).toString();
 
                 // Normalizar a descrição
-                QString descricaoNormalizada = MainWindow::normalizeText(descricao);
+                QString descricaoNormalizada = Produto_Service::normalizeText(descricao);
 
                 // Atualizar a tabela produtos com a descrição normalizada
                 QSqlQuery updateQuery;
@@ -234,7 +235,7 @@ void SchemaManager::update() {
                 QString descricao = query.value(1).toString();
 
                 // Normalizar a descrição
-                QString descricaoNormalizada = MainWindow::normalizeText(descricao);
+                QString descricaoNormalizada = Produto_Service::normalizeText(descricao);
 
                 // Atualizar a tabela produtos com a descrição normalizada
                 QSqlQuery updateQuery;

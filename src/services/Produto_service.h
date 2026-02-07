@@ -52,6 +52,8 @@ public:
   Produto_Repository *repo;
   Resultado alterar(const ProdutoDTO &p, const QString &id);
   Resultado alterarVerificarCodigoBarras(const ProdutoDTO &p, const QString &codigo, const QString &id);
+  QStringList obterSugestoesLocal();
+  Resultado atualizarLocalProduto(int id, const QString &novoLocal);
 };
 
 #endif

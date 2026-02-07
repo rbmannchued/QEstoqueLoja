@@ -9,7 +9,7 @@
 #include "configuracao.h"
 #include <QFocusEvent>
 #include <QAbstractItemView>
-
+#include "../util/codigobarrasutil.h"
 
 InserirProduto::InserirProduto(QWidget *parent)
     : QWidget(parent)
@@ -27,7 +27,6 @@ InserirProduto::InserirProduto(QWidget *parent)
     for (int i = 0; i < unidadesComerciaisCount; ++i) {
         ui->CBox_UCom->addItem(unidadesComerciais[i]);
     }
-
     carregarConfiguracoes();
 
     ui->Ledit_PercentualLucro->setText(financeiroValues.value("porcent_lucro"));
@@ -57,6 +56,7 @@ InserirProduto::InserirProduto(QWidget *parent)
     ui->Ledit_CEST->setEnabled(false);
     service = new Produto_Service(db);
 
+    on_Ledit_NCM_editingFinished();
 
 }
 
@@ -104,21 +104,10 @@ void InserirProduto::preencherCamposProduto(
 
 }
 
-QString InserirProduto::gerarNumero()
-{
-    QString number;
-    do {
-        number = QString("3562%1").arg(QRandomGenerator::global()->bounded(100000), 5, 10, QChar('0'));
-    } while (generatedNumbers.contains(number));
-
-    generatedNumbers.insert(number);
-    // saveGeneratedNumber(number);
-
-    return number;
-}
 void InserirProduto::on_Btn_GerarCBarras_clicked()
 {
-    ui->Ledit_CBarras->setText(gerarNumero());
+    QString codigo = CodigoBarrasUtil::gerarNumeroCodigoBarrasNaoFiscal();
+    ui->Ledit_CBarras->setText(codigo);
 }
 
 void InserirProduto::on_Ledit_CBarras_returnPressed()
@@ -148,7 +137,7 @@ void InserirProduto::on_Btn_Enviar_clicked()
     ProdutoDTO p;
 
     p.quantidade = portugues.toDouble(ui->Ledit_Quant->text());
-    p.descricao = MainWindow::normalizeText(ui->Ledit_Desc->text());
+    p.descricao = Produto_Service::normalizeText(ui->Ledit_Desc->text());
     p.preco = portugues.toDouble(ui->Ledit_PrecoFinal->text());
     p.codigoBarras = ui->Ledit_CBarras->text();
     p.nf = ui->Check_Nf->isChecked();
