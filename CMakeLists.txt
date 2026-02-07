@@ -151,6 +151,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/dto/Produto_dto.h
         src/repository/Produto_repository.h
         src/repository/Produto_repository.cpp
+        src/util/printutil.h src/util/printutil.cpp
+        src/services/barcode_service.h src/services/barcode_service.cpp
 
     )
 

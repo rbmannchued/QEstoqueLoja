@@ -5,8 +5,23 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Qt Test
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Test Core Sql)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Test Core Sql)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Test Core Sql Gui )
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Test Core Sql Gui)
+
+if(CMAKE_SYSTEM MATCHES "Windows")
+
+    include(FetchContent)
+    FetchContent_Declare(
+    zint
+    GIT_REPOSITORY https://github.com/zint/zint.git
+    GIT_TAG master # Você pode substituir por uma versão específica, se desejar
+    )
+    FetchContent_MakeAvailable(zint)
+elseif(CMAKE_SYSTEM MATCHES "Linux")
+    find_package(PNG)
+    find_library(ZINT_LIBRARIES NAMES zint)
+
+endif()
 
 # ==============================
 # Fontes de teste
@@ -23,6 +38,7 @@ set(TEST_SOURCES
 
     # services
     services/test_produto_service.cpp
+    services/test_barcode_service.cpp
 )
 
 # ==============================
@@ -37,6 +53,9 @@ add_executable(QEstoqueLojaTests
     ${CMAKE_SOURCE_DIR}/src/util/ibptutil.cpp
     services/test_produto_service.h
     ${CMAKE_SOURCE_DIR}/src/repository/Produto_repository.cpp
+    services/test_barcode_service.h services/test_barcode_service.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/barcode_service.cpp
+
 
 )
 
@@ -60,6 +79,8 @@ target_link_libraries(QEstoqueLojaTests PRIVATE
     Qt${QT_VERSION_MAJOR}::Test
     Qt${QT_VERSION_MAJOR}::Core
     Qt${QT_VERSION_MAJOR}::Sql
+    Qt${QT_VERSION_MAJOR}::Gui
+    zint
 )
 
 
