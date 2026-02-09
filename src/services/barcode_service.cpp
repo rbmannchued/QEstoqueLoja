@@ -41,8 +41,11 @@ QImage Barcode_service::gerarCodigoBarras(const QString &codBar, QString *erro)
 
     ZBarcode_Print(barcode, 0);
     ZBarcode_Delete(barcode);
-
+#if defined(Q_OS_LINUX)
     QImage img("out.png");
+#elif defined(Q_OS_WIN);
+    QImage img("out.gif");
+#endif
     if (img.isNull()) {
         if (erro) *erro = "Imagem do código de barras não foi gerada";
         return QImage();
