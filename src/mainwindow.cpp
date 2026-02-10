@@ -42,6 +42,8 @@
 #include "../util/printutil.h"
 #include "../services/barcode_service.h"
 #include "../services/acbr_service.h"
+#include "services/schemamigration_service.h"
+#include "infra/databaseconnection_service.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -49,25 +51,18 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    QCoreApplication::setApplicationVersion("v2.3.0");
+    QCoreApplication::setApplicationVersion(VERSAO_QE);
 
     model = new QSqlQueryModel(this);
 
-
-    SchemaManager *schemaManager = new SchemaManager(this, 7);
-    //config versao 6
-    connect(schemaManager, &SchemaManager::dbVersao6, this,
-            &MainWindow::atualizarConfigAcbr);
-    schemaManager->update();
-    db = QSqlDatabase::database();
-
+    iniciarMigration();
+    db = DatabaseConnection_service::db();
 
     produtoService = new Produto_Service(db);
 
 
     // configuracao do modelo e view produtos
     ui->Tview_Produtos->setModel(model);
-    model->setQuery("SELECT * FROM produtos ORDER BY id DESC");
     model->setHeaderData(0, Qt::Horizontal, tr("ID"));
     model->setHeaderData(1, Qt::Horizontal, tr("Quantidade"));
     model->setHeaderData(2, Qt::Horizontal, tr("Descrição"));
@@ -136,30 +131,64 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->Tview_Produtos, &QTableView::doubleClicked,
             this, &MainWindow::verProd);
 
-    ManifestadorDFe *manifestdfe = new ManifestadorDFe();
+    // ManifestadorDFe *manifestdfe = new ManifestadorDFe();
 
-    if(manifestdfe->possoConsultar() &&
-        fiscalValues.value("emit_nf") == "1" && fiscalValues.value("tp_amb") == "1"){
+    // if(manifestdfe->possoConsultar() &&
+    //     fiscalValues.value("emit_nf") == "1" && fiscalValues.value("tp_amb") == "1"){
 
-        try {
-            manifestdfe->consultarEManifestar();
-        }
-        catch (const std::exception &e) {
-            qDebug() << "Erro ao consultar DFE:" << e.what();
-        }
-        catch (...) {
-            qDebug() << "Erro desconhecido ao consultar DFE";
-        }
-    }else{
-        qDebug() << "Nao consultado DFE";
+    //     try {
+    //         manifestdfe->consultarEManifestar();
+    //     }
+    //     catch (const std::exception &e) {
+    //         qDebug() << "Erro ao consultar DFE:" << e.what();
+    //     }
+    //     catch (...) {
+    //         qDebug() << "Erro desconhecido ao consultar DFE";
+    //     }
+    // }else{
+    //     qDebug() << "Nao consultado DFE";
 
-    }
+    // }
 
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::iniciarMigration(){
+    // SchemaMigration_service schemaService;
+
+    // // cria schema base
+    // auto r1 = schemaService.init();
+    // if (!r1.ok) {
+    //     QMessageBox::critical(this, "Erro Schema", r1.message);
+    //     QCoreApplication::quit();
+    //     return;
+    // }
+
+    // // migra incremental
+    // auto r2 = schemaService.migrate();
+    // if (!r2.ok) {
+    //     QMessageBox::critical(this, "Erro Migração", r2.message);
+    //     QCoreApplication::quit();
+    //     return;
+    // }
+
+    // if (r2.oldVersion < 6 && r2.newVersion >= 6) {
+    //     atualizarConfigAcbr();
+    //     qDebug() << "rodou versao 6";
+    // }
+
+    // if (r2.oldVersion < 7 && r2.newVersion >= 7) {
+    //     // outra ação futura
+    //     qDebug() << "rodou versao 7";
+
+    // }
+    SchemaManager *schema = new SchemaManager(this, ultimaVersaoSchema);
+    schema->update();
+
 }
 
 void MainWindow::mostrarProdutoPorCodigoBarras(const QString &codigo)

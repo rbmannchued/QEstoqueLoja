@@ -10,44 +10,19 @@
 #include "configuracao.h"
 #include "mainwindow.h"
 #include "../services/Produto_service.h"
+#include "../infra/databaseconnection_service.h"
 
 SchemaManager::SchemaManager(QObject *parent, int dbLastVersion)
     : QObject{parent}
 {
     dbSchemaLastVersion = dbLastVersion;
 
-    QSqlDatabase::addDatabase("QSQLITE");
-
-    db = QSqlDatabase::database();
+    db = DatabaseConnection_service::db();
 
     // Configura o nome do aplicativo (importante para definir a pasta no Linux)
     QCoreApplication::setApplicationName("QEstoqueLoja");
 
-    QString dbPath;
-
-#if defined(Q_OS_LINUX)
-        // Linux: ~/.local/share/QEstoqueLoja/estoque.db
-    dbPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/estoque.db";
-    qDebug() << dbPath;
-#elif defined(Q_OS_WIN)
-        // Windows: %APPDATA%\QEstoqueLoja\estoque.db
-    QString appDataPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-    QDir dir(appDataPath);
-    if (!dir.exists()) {
-        dir.mkpath(".");  // Cria a pasta se não existir
-    }
-    dbPath = appDataPath + "/estoque.db";
-#endif
-
-    db.setDatabaseName(dbPath);
-    QFileInfo dbFileInfo(dbPath);
-    QDir dbDir = dbFileInfo.dir();
-    if (!dbDir.exists()) {
-        if (!dbDir.mkpath(".")) {
-            qDebug() << "Erro ao criar diretório para o banco de dados:" << dbDir.path();
-        }
-    }
-    if(!db.open()){
+    if(!DatabaseConnection_service::open()){
         qDebug() << "erro ao abrir banco de dados.";
     }
     // criar a versao 0 se o banco de dados estiver vazio
@@ -153,9 +128,11 @@ void SchemaManager::update() {
             }
             QSqlQuery query;
 
-            query.exec("CREATE TABLE config (id INT AUTO_INCREMENT PRIMARY KEY, "
+            if(!query.exec("CREATE TABLE config (id INTEGER AUTOINCREMENT PRIMARY KEY, "
                        "key VARCHAR(255) NOT NULL UNIQUE, "
-                       "value TEXT)");
+                            "value TEXT)")){
+                qDebug() << "nao rodou query config";
+            }
             query.exec("INSERT INTO config (key, value) VALUES ('nome_empresa', '')");
             query.exec("INSERT INTO config (key, value) VALUES ('endereco_empresa', '')");
             query.exec("INSERT INTO config (key, value) VALUES ('telefone_empresa', '')");

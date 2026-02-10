@@ -112,8 +112,11 @@ private:
     void setarIconesJanela();
     //QModelIndex selected_index;
 
+    const int ultimaVersaoSchema = 7;
+
 
     void mostrarProdutoPorCodigoBarras(const QString &codigo);
+    void iniciarMigration();
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
     QString getIdProdSelected();
