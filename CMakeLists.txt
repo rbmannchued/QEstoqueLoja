@@ -123,7 +123,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/nota/ACBrNFeImport.h
         src/nota/nfceacbr.h src/nota/nfceacbr.cpp
         src/nota/nfeacbr.h src/nota/nfeacbr.cpp
-        src/schemamanager.h src/schemamanager.cpp
         src/nota/cancelnf.h src/nota/cancelnf.cpp
         src/util/ACBrConsultaCNPJ.cpp src/util/ACBrConsultaCNPJ.h
         src/util/consultacnpjmanager.h src/util/consultacnpjmanager.cpp
@@ -158,6 +157,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/services/schemamigration_service.h src/services/schemamigration_service.cpp
         src/infra/apppath_service.h src/infra/apppath_service.cpp
         src/infra/databaseconnection_service.h src/infra/databaseconnection_service.cpp
+        src/services/schemamigration_service.cpp src/services/schemamigration_service.h
 
 
     )
