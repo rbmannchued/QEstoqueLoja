@@ -31,6 +31,7 @@
 #include "infojanelaprod.h"
 #include <QStandardPaths>
 #include "util/helppage.h"
+#include "schemamanager.h"
 #include "util/consultacnpjmanager.h"
 #include "entradas.h"
 #include "util/manifestadordfe.h"
@@ -43,7 +44,6 @@
 #include "../services/acbr_service.h"
 #include "services/schemamigration_service.h"
 #include "infra/databaseconnection_service.h"
-#include "services/schemamigration_service.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -131,24 +131,24 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->Tview_Produtos, &QTableView::doubleClicked,
             this, &MainWindow::verProd);
 
-    ManifestadorDFe *manifestdfe = new ManifestadorDFe();
+    // ManifestadorDFe *manifestdfe = new ManifestadorDFe();
 
-    if(manifestdfe->possoConsultar() &&
-        fiscalValues.value("emit_nf") == "1" && fiscalValues.value("tp_amb") == "1"){
+    // if(manifestdfe->possoConsultar() &&
+    //     fiscalValues.value("emit_nf") == "1" && fiscalValues.value("tp_amb") == "1"){
 
-        try {
-            manifestdfe->consultarEManifestar();
-        }
-        catch (const std::exception &e) {
-            qDebug() << "Erro ao consultar DFE:" << e.what();
-        }
-        catch (...) {
-            qDebug() << "Erro desconhecido ao consultar DFE";
-        }
-    }else{
-        qDebug() << "Nao consultado DFE";
+    //     try {
+    //         manifestdfe->consultarEManifestar();
+    //     }
+    //     catch (const std::exception &e) {
+    //         qDebug() << "Erro ao consultar DFE:" << e.what();
+    //     }
+    //     catch (...) {
+    //         qDebug() << "Erro desconhecido ao consultar DFE";
+    //     }
+    // }else{
+    //     qDebug() << "Nao consultado DFE";
 
-    }
+    // }
 
 }
 
@@ -158,17 +158,36 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::iniciarMigration(){
+    // SchemaMigration_service schemaService;
 
-    SchemaMigration_service *schema = new SchemaMigration_service(this, ultimaVersaoSchema);
-    //conexões de ações para update de versao schema
-    connect(schema, &SchemaMigration_service::dbVersao6, this,
-            &MainWindow::atualizarConfigAcbr);
+    // // cria schema base
+    // auto r1 = schemaService.init();
+    // if (!r1.ok) {
+    //     QMessageBox::critical(this, "Erro Schema", r1.message);
+    //     QCoreApplication::quit();
+    //     return;
+    // }
 
-    // schema->update();
-    auto result = schema->update();
-    if(!result.ok){
-        QMessageBox::warning(this, "Erro migração", "Erro ao migrar banco de dados");
-    }
+    // // migra incremental
+    // auto r2 = schemaService.migrate();
+    // if (!r2.ok) {
+    //     QMessageBox::critical(this, "Erro Migração", r2.message);
+    //     QCoreApplication::quit();
+    //     return;
+    // }
+
+    // if (r2.oldVersion < 6 && r2.newVersion >= 6) {
+    //     atualizarConfigAcbr();
+    //     qDebug() << "rodou versao 6";
+    // }
+
+    // if (r2.oldVersion < 7 && r2.newVersion >= 7) {
+    //     // outra ação futura
+    //     qDebug() << "rodou versao 7";
+
+    // }
+    SchemaManager *schema = new SchemaManager(this, ultimaVersaoSchema);
+    schema->update();
 
 }
 
@@ -532,19 +551,15 @@ void MainWindow::on_actionDocumenta_o_triggered()
 }
 
 void MainWindow::atualizarConfigAcbr(){
-    qDebug() << " tentou atualizar acbr config";
-        auto *acbrService = new Acbr_service(this);
-        auto res = acbrService->configurar(VERSAO_QE);
-        acbrService->configurar(VERSAO_QE);
-        if(!res.ok){
-            if(res.erro != AcbrErro::NaoEmitindoNf){
-                QMessageBox::critical(this, "Erro", res.msg);
-                return;
-            }
-
-        }else{
-            qDebug() << "Configurações salvas no arquivo acbrlib.ini";
-        }
+    auto *acbrService = new Acbr_service(this);
+    auto res = acbrService->configurar(VERSAO_QE);
+    acbrService->configurar(VERSAO_QE);
+    if(!res.ok){
+        QMessageBox::critical(this, "Erro", res.msg);
+        return;
+    }else{
+        qDebug() << "Configurações salvas no arquivo acbrlib.ini";
+    }
 
 }
 

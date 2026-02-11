@@ -25,10 +25,6 @@ Acbr_service::Resultado Acbr_service::configurar(const QString &versaoApp)
     fiscalValues = Configuracao::get_All_Fiscal_Values();
     empresaValues = Configuracao::get_All_Empresa_Values();
     emailValues = Configuracao::get_All_Email_Values();
-    if(fiscalValues.value("emit_nf") != "1"){
-        return{false, AcbrErro::NaoEmitindoNf, "Não atualizou pois emitir NF não está marcado"};
-    }
-
 
     QString caminhoXml = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) +
                          "/xmlNf";

@@ -1,43 +1,35 @@
 #ifndef SCHEMAMIGRATION_SERVICE_H
 #define SCHEMAMIGRATION_SERVICE_H
-
 #include <QObject>
-#include <QSqlDatabase>
+#include <QString>
 
-enum class SchemaErro {
-    Nenhum,
-    CampoVazio,
-    FalhaConexao,
-    ErroSQL,
-    ErroMigracao
-};
 
 class SchemaMigration_service : public QObject
 {
     Q_OBJECT
 
+    enum class SchemaErro {
+        Nenhum,
+        CampoVazio,
+        FalhaConexao,
+        ErroSQL,
+        ErroMigracao
+    };
 public:
 
     struct Resultado {
         bool ok;
         SchemaErro status;
         QString message;
-        int lastVersion;
+        int oldVersion;
+        int newVersion;
     };
-    explicit SchemaMigration_service(QObject *parent = nullptr, int dbLastVersion = 0);
 
-    int dbSchemaLastVersion;
-
-    int dbSchemaVersion;
-
-    QSqlDatabase db;
-    // void update();
-
-    SchemaMigration_service::Resultado update();
+    explicit SchemaMigration_service(QObject *parent = nullptr);
+    Resultado init();      // cria banco + tabelas base
+    Resultado migrate();   // migração incremental
 
 signals:
-    void dbVersao6();
-    void dbVersao7();
 };
 
-#endif // SCHEMAMANAGER_H
+#endif // SCHEMAMIGRATION_SERVICE_H
