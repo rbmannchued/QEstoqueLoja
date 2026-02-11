@@ -7,7 +7,8 @@
 enum class AcbrErro {
     Nenhum,
     CampoVazio,
-    ConfiguracaoInvalida
+    ConfiguracaoInvalida,
+    NaoEmitindoNf
 };
 
 class Acbr_service : public QObject
