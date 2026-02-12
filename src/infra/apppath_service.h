@@ -13,6 +13,7 @@ public:
     static QString databasePath();
     static QString xmlPath();
     static QString schemaPath();
+    static QString imagesPath();
 signals:
 };
 

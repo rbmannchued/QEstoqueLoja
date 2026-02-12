@@ -13,6 +13,7 @@ public:
     static bool open();
     void close();
     static QSqlDatabase db();
+    static void setDatabase(QSqlDatabase database);
 private:
      static bool initialized;
 

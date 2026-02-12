@@ -42,3 +42,14 @@ QString AppPath_service::schemaPath()
     }
     return path;
 }
+
+QString AppPath_service::imagesPath()
+{
+    AppPath_service pathService;
+    QString path = pathService.appDataPath() + "/imagens";
+    QDir dir(path);
+    if (!dir.exists()) {
+        dir.mkpath(".");
+    }
+    return path;
+}
