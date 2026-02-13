@@ -8,6 +8,7 @@
 #include <QItemSelection>
 #include "mainwindow.h"
 #include <QLocale>
+#include "dto/Config_dto.h"
 
 namespace Ui {
 class venda;
@@ -67,7 +68,7 @@ private:
     Ui::venda *ui;
     QAction *actionMenuDeletarProd;
     QStringList clientesComId;
-    QMap <QString, QString> fiscalValues;
+    ConfigDTO configDTO;
     QString getIdProdSelected();
     void verProd();
 signals:

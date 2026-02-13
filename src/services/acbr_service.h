@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QMap>
+#include "../services/config_service.h"
 
 enum class AcbrErro {
     Nenhum,
@@ -24,10 +25,7 @@ public:
     explicit Acbr_service(QObject *parent = nullptr);
     Acbr_service::Resultado configurar(const QString &versaoApp);
 private:
-    QMap<QString, QString> financeiroValues;
-    QMap<QString, QString> fiscalValues;
-    QMap<QString, QString> empresaValues;
-    QMap<QString, QString> emailValues;
+    ConfigDTO configDTO;
 
 signals:
 };

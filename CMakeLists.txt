@@ -158,6 +158,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/infra/apppath_service.h src/infra/apppath_service.cpp
         src/infra/databaseconnection_service.h src/infra/databaseconnection_service.cpp
         src/services/schemamigration_service.cpp src/services/schemamigration_service.h
+        src/dto/Config_dto.h
+        src/repository/config_repository.h src/repository/config_repository.cpp
+        src/services/config_service.h src/services/config_service.cpp
+        src/services/imagestorage_service.h src/services/imagestorage_service.cpp
 
 
     )

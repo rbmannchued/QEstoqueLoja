@@ -22,10 +22,10 @@ Acbr_service::Resultado Acbr_service::configurar(const QString &versaoApp)
     auto cnpj = ConsultaCnpjManager::instance()->cnpj();
     auto mail = MailManager::instance().mail();
 
-    fiscalValues = Configuracao::get_All_Fiscal_Values();
-    empresaValues = Configuracao::get_All_Empresa_Values();
-    emailValues = Configuracao::get_All_Email_Values();
-    if(fiscalValues.value("emit_nf") != "1"){
+    Config_service *confServ = new Config_service(this);
+    configDTO = confServ->carregarTudo();
+
+    if(configDTO.tpAmbFiscal != true){
         return{false, AcbrErro::NaoEmitindoNf, "Não atualizou pois emitir NF não está marcado"};
     }
 
@@ -47,16 +47,16 @@ Acbr_service::Resultado Acbr_service::configurar(const QString &versaoApp)
         result.erase(std::remove(result.begin(), result.end(), '\0'), result.end());
         return result.empty() ? "" : result;
     };
-    QString ufEstado = empresaValues.value("estado_empresa");
-    std::string certificadoPath = cleanStr(fiscalValues.value("caminho_certificado"));
-    std::string certificadoSenha = cleanStr(fiscalValues.value("senha_certificado"));
+    QString ufEstado = configDTO.estadoEmpresa;
+    std::string certificadoPath = cleanStr(configDTO.certificadoPathFiscal);
+    std::string certificadoSenha = cleanStr(configDTO.senhaCertificadoFiscal);
     std::string uf = cleanStr(ufEstado);
-    std::string schemaPath = cleanStr(fiscalValues.value("caminho_schema"));
-    std::string idCsc = cleanStr(fiscalValues.value("id_csc"));
-    std::string csc = cleanStr(fiscalValues.value("csc"));
-    std::string tpAmb = (fiscalValues.value("tp_amb") == "0" ? "1" : "0");
+    std::string schemaPath = cleanStr(configDTO.schemaPathFiscal);
+    std::string idCsc = cleanStr(configDTO.idCscFiscal);
+    std::string csc = cleanStr(configDTO.cscFiscal);
+    std::string tpAmb = (configDTO.tpAmbFiscal == 0 ? "1" : "0");
     QString caminhoCompletoLogo = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) +
-                                  "/imagens/" + QFileInfo(empresaValues.value("caminho_logo_empresa")).fileName();
+                                  "/imagens/" + QFileInfo(configDTO.logoPathEmpresa).fileName();
 
 
     if(certificadoPath == "")
@@ -126,14 +126,14 @@ Acbr_service::Resultado Acbr_service::configurar(const QString &versaoApp)
     cnpj->ConfigGravar("");
 
     //acbrMail
-    mail->ConfigGravarValor("Email", "Nome", emailValues.value("email_nome").toStdString());
-    mail->ConfigGravarValor("Email", "Servidor", emailValues.value("email_smtp").toStdString());
-    mail->ConfigGravarValor("Email", "Conta", emailValues.value("email_conta").toStdString());
-    mail->ConfigGravarValor("Email", "Usuario", emailValues.value("email_usuario").toStdString());
-    mail->ConfigGravarValor("Email", "Senha", emailValues.value("email_senha").toStdString());
-    mail->ConfigGravarValor("Email", "Porta", emailValues.value("email_porta").toStdString());
-    mail->ConfigGravarValor("Email", "SSL", emailValues.value("email_ssl").toStdString());
-    mail->ConfigGravarValor("Email", "TLS", emailValues.value("email_tls").toStdString());
+    mail->ConfigGravarValor("Email", "Nome", configDTO.nomeEmail.toStdString());
+    mail->ConfigGravarValor("Email", "Servidor", configDTO.smtpEmail.toStdString());
+    mail->ConfigGravarValor("Email", "Conta", configDTO.contaEmail.toStdString());
+    mail->ConfigGravarValor("Email", "Usuario", configDTO.usuarioEmail.toStdString());
+    mail->ConfigGravarValor("Email", "Senha", configDTO.senhaEmail.toStdString());
+    mail->ConfigGravarValor("Email", "Porta", configDTO.portaEmail.toStdString());
+    mail->ConfigGravarValor("Email", "SSL", QVariant(configDTO.sslEmail).toString().toStdString());
+    mail->ConfigGravarValor("Email", "TLS", QVariant(configDTO.tlsEmail).toString().toStdString());
     mail->ConfigGravar("");
 
     return {true, AcbrErro::Nenhum, ""};

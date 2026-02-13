@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QSqlDatabase>
+#include "config_service.h"
 
 enum class SchemaErro {
     Nenhum,
@@ -29,6 +30,7 @@ public:
     int dbSchemaLastVersion;
 
     int dbSchemaVersion;
+    ConfigDTO configDTO;
 
     QSqlDatabase db;
     // void update();

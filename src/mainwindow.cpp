@@ -38,12 +38,13 @@
 #include "janelaemailcontador.h"
 #include "sobre.h"
 #include "monitorfiscal.h"
-#include "../util/printutil.h"
-#include "../services/barcode_service.h"
-#include "../services/acbr_service.h"
+#include "util/printutil.h"
+#include "services/barcode_service.h"
+#include "services/acbr_service.h"
 #include "services/schemamigration_service.h"
 #include "infra/databaseconnection_service.h"
 #include "services/schemamigration_service.h"
+#include "services/config_service.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -70,10 +71,8 @@ MainWindow::MainWindow(QWidget *parent)
     model->setHeaderData(4, Qt::Horizontal, tr("Código de Barras"));
     model->setHeaderData(5, Qt::Horizontal, tr("NF"));
 
-    financeiroValues = Configuracao::get_All_Financeiro_Values();
-    empresaValues = Configuracao::get_All_Empresa_Values();
-    fiscalValues = Configuracao::get_All_Fiscal_Values();
-    emailValues = Configuracao::get_All_Email_Values();
+    Config_service *confServ = new Config_service(this);
+    configDTO = confServ->carregarTudo();
 
     // mostrar na tabela da aplicaçao a tabela do banco de dados.
     ui->Tview_Produtos->horizontalHeader()->setStyleSheet("background-color: rgb(33, 105, 149)");
@@ -134,7 +133,7 @@ MainWindow::MainWindow(QWidget *parent)
     ManifestadorDFe *manifestdfe = new ManifestadorDFe();
 
     if(manifestdfe->possoConsultar() &&
-        fiscalValues.value("emit_nf") == "1" && fiscalValues.value("tp_amb") == "1"){
+        configDTO.emitNfFiscal && configDTO.tpAmbFiscal){
 
         try {
             manifestdfe->consultarEManifestar();
@@ -551,7 +550,7 @@ void MainWindow::atualizarConfigAcbr(){
 
 void MainWindow::on_Btn_Entradas_clicked()
 {
-    if(fiscalValues.value("emit_nf") == "1" && fiscalValues.value("tp_amb") == "1"){
+    if(configDTO.emitNfFiscal && configDTO.tpAmbFiscal){
         Entradas *entradas = new Entradas();
         entradas->show();
         connect(entradas, &Entradas::produtoAdicionado, this,

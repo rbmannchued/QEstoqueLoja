@@ -21,6 +21,7 @@
 #include "subclass/customlineedit.h"
 #include "nota/acbrmanager.h"
 #include "../services/Produto_service.h"
+#include "dto/Config_dto.h"
 
 
 #define VERSAO_QE "2.4.0"
@@ -102,11 +103,8 @@ private:
     QAction* actionMenuPrintBarCode1;
     QAction* actionMenuPrintBarCode3;
     QAction* actionVerProduto;
-    QMap<QString, QString> financeiroValues;
-    QMap<QString, QString> fiscalValues;
-    QMap<QString, QString> empresaValues;
-    QMap<QString, QString> emailValues;
     Produto_Service *produtoService;
+    ConfigDTO configDTO;
 
 
     void setarIconesJanela();

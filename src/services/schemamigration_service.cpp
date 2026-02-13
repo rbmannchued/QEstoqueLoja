@@ -72,9 +72,8 @@ SchemaMigration_service::Resultado SchemaMigration_service::update() {
     }
     query.finish();
     qDebug() << dbSchemaVersion;
-
-    QMap<QString, QString> financeiroValues = Configuracao::get_All_Financeiro_Values();
-
+    Config_service *confServ = new Config_service(this);
+    configDTO = confServ->carregarTudo();
     while (dbSchemaVersion < dbSchemaLastVersion){
         // selecionar a atualizacao conforme a versao atual do banco de dados
         switch (dbSchemaVersion) {
@@ -511,7 +510,7 @@ SchemaMigration_service::Resultado SchemaMigration_service::update() {
             if (!hasErrors) {
 
                 query.prepare("UPDATE produtos SET porcent_lucro = :porcent");
-                query.bindValue(":porcent", financeiroValues.value("porcent_lucro"));
+                query.bindValue(":porcent", configDTO.porcentLucroFinanceiro);
                 if (!query.exec()) {
                     qDebug() << "Erro ao atualizar porcent_lucro:" << query.lastError().text();
                     hasErrors = true;

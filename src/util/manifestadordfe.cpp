@@ -17,10 +17,10 @@ ManifestadorDFe::ManifestadorDFe(QObject *parent)
     : QObject{parent}
 {
     db = QSqlDatabase::database();
-    empresaValues = Configuracao::get_All_Empresa_Values();
-    fiscalValues = Configuracao::get_All_Fiscal_Values();
-    cnpj = empresaValues.value("cnpj_empresa");
-    cuf = fiscalValues.value("cuf");
+    Config_service *confServ = new Config_service(this);
+    configDTO = confServ->carregarTudo();
+    cnpj = configDTO.cnpjEmpresa;
+    cuf = configDTO.cUfFiscal;
     carregarConfigs();
 }
 void ManifestadorDFe::carregarConfigs(){
@@ -327,7 +327,7 @@ void ManifestadorDFe::salvarResumoNota(ResumoNFe resumo){
                   ":saida, :nnf, :serie)");
     query.bindValue(":cstat", resumo.cstat);
     query.bindValue(":modelo", "55");
-    query.bindValue(":tpamb", fiscalValues.value("tp_amb"));
+    query.bindValue(":tpamb", configDTO.tpAmbFiscal);
     query.bindValue(":xmlpath", resumo.xml_path);
     query.bindValue(":vnf", portugues.toString(resumo.vnf.toDouble()));
     query.bindValue(":atualizadoem", dataFormatada);

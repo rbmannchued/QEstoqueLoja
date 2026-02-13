@@ -6,6 +6,7 @@
 #include <QMap>
 #include <QSqlDatabase>
 #include "../nota/eventocienciaop.h"
+#include "../services/config_service.h"
 
 struct ResumoNFe {
     QString chave;
@@ -92,8 +93,7 @@ public:
     void consultaAlternada();
 private:
     QSqlDatabase db;
-    QMap<QString, QString> fiscalValues;
-    QMap<QString, QString> empresaValues;
+    ConfigDTO configDTO;
     QString cuf,cnpj;
     QString ultimo_nsu;
     QString ultNsuXml;

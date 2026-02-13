@@ -41,7 +41,8 @@ relatorios::relatorios(QWidget *parent)
     ui->setupUi(this);
     ui->tabWidget->setCurrentIndex(1);
     ui->Stacked_Estoque->setCurrentIndex(3);
-    fiscalValues = Configuracao::get_All_Fiscal_Values();
+    Config_service *confServ = new Config_service(this);
+    configDTO = confServ->carregarTudo();
 
     connect(ui->CBox_EstoqueMain, QOverload<int>::of(&QComboBox::currentIndexChanged),
             ui->Stacked_Estoque, &QStackedWidget::setCurrentIndex);
@@ -1440,7 +1441,6 @@ void relatorios::on_Tview_ProdutosSelec_customContextMenuRequested(const QPoint 
 QMap<QString, float> relatorios::buscarValoresNfAno(const QString &ano) {
 
     QMap<QString, float> valores;
-    QString tpamb = fiscalValues.value("tp_amb");
     qDebug() << ano;
     QSqlQuery query;
     query.prepare("SELECT strftime('%m', atualizado_em) AS mes, SUM(valor_total) "
@@ -1450,7 +1450,7 @@ QMap<QString, float> relatorios::buscarValoresNfAno(const QString &ano) {
                   "AND finalidade = 'NORMAL' "
                   "GROUP BY mes");
     query.bindValue(":ano", ano);
-    query.bindValue(":tpamb", tpamb);
+    query.bindValue(":tpamb", configDTO.tpAmbFiscal);
 
     if (query.exec()) {
         while (query.next()) {

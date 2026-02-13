@@ -3,6 +3,7 @@
 
 #include <QDialog>
 #include <QSqlDatabase>
+#include "services/config_service.h"
 
 namespace Ui {
 class JanelaEmailContador;
@@ -28,10 +29,8 @@ private:
     QSqlDatabase db;
     void atualizarContadores();
     QMap<QString, QStringList> xmlsPorPasta;
-    QMap<QString, QString> contadorValues;
-    QMap<QString, QString> empresaValues;
-    QMap<QString, QString> fiscalValues;
     void enviarEmailContador(QString zip, QDate dtIni, QDate dtFim);
+    ConfigDTO configDTO;
 };
 
 #endif // JANELAEMAILCONTADOR_H

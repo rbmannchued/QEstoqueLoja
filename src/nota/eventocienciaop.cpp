@@ -10,8 +10,8 @@
 EventoCienciaOP::EventoCienciaOP(QObject *parent, QString chnfe)
     : QObject{parent}
 {
-    empresaValues = Configuracao::get_All_Empresa_Values();
-    fiscalValues = Configuracao::get_All_Fiscal_Values();
+    Config_service *confServ = new Config_service(this);
+    configDTO = confServ->carregarTudo();
     chnfe_global = chnfe;
 
     acbr = AcbrManager::instance()->nfe();
@@ -19,7 +19,7 @@ EventoCienciaOP::EventoCienciaOP(QObject *parent, QString chnfe)
 
 void EventoCienciaOP::preencherEvento(){
     std::string dataHora = QDateTime::currentDateTime().toString("dd/MM/yyyy hh:mm").toStdString();
-    QString cnpjemit = empresaValues.value("cnpj_empresa");
+    QString cnpjemit = configDTO.cnpjEmpresa;
 
     ini << "[EVENTO]\n";
     ini << "idLote=" << ID_LOTE << "\n";
