@@ -71,6 +71,8 @@ MainWindow::MainWindow(QWidget *parent)
     model->setHeaderData(4, Qt::Horizontal, tr("Código de Barras"));
     model->setHeaderData(5, Qt::Horizontal, tr("NF"));
 
+
+    //carrega as configurações no DTO
     Config_service *confServ = new Config_service(this);
     configDTO = confServ->carregarTudo();
 

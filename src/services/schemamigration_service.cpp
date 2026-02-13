@@ -15,20 +15,24 @@ SchemaMigration_service::SchemaMigration_service(QObject *parent, int dbLastVers
     : QObject{parent}
 {
     dbSchemaLastVersion = dbLastVersion;
+    // Config_service *confServ = new Config_service(this);
+    // configDTO = confServ->carregarTudo();
 
     if(!DatabaseConnection_service::init()){
         qDebug() << "Nao init banco de dados";
     }
     db = DatabaseConnection_service::db();
+    qDebug() << "Schema usando dbname: " + db.connectionName();
+    qDebug() << "Db schema esta iniciado: " + QString::number(db.isOpen());
 
     // Configura o nome do aplicativo (importante para definir a pasta no Linux)
-    QCoreApplication::setApplicationName("QEstoqueLoja");
+    // QCoreApplication::setApplicationName("QEstoqueLoja");
 
     if(!DatabaseConnection_service::open()){
         qDebug() << "erro ao abrir banco de dados.";
     }
     // criar a versao 0 se o banco de dados estiver vazio
-    QSqlQuery query;
+    QSqlQuery query(db);
     query.exec("CREATE TABLE produtos (id INTEGER PRIMARY KEY AUTOINCREMENT, quantidade INTEGER, descricao TEXT, preco DECIMAL(10,2), codigo_barras VARCHAR(20), nf BOOLEAN)");
     if (query.isActive()) {
         qDebug() << "Tabela produtos criada com sucesso!";
@@ -59,7 +63,7 @@ SchemaMigration_service::Resultado SchemaMigration_service::update() {
         return {false, SchemaErro::FalhaConexao, "erro ao iniciar banco de dados", 0 };
     }
 
-    QSqlQuery query;
+    QSqlQuery query(db);
     // obter a versao do esquema do banco de dados
     if (query.exec("PRAGMA user_version")) {
         if (query.next()) {
@@ -72,8 +76,7 @@ SchemaMigration_service::Resultado SchemaMigration_service::update() {
     }
     query.finish();
     qDebug() << dbSchemaVersion;
-    Config_service *confServ = new Config_service(this);
-    configDTO = confServ->carregarTudo();
+
     while (dbSchemaVersion < dbSchemaLastVersion){
         // selecionar a atualizacao conforme a versao atual do banco de dados
         switch (dbSchemaVersion) {
@@ -86,7 +89,7 @@ SchemaMigration_service::Resultado SchemaMigration_service::update() {
                 qDebug() << "Error: unable to start transaction";
             }
 
-            QSqlQuery query;
+            QSqlQuery query(db);
 
             query.exec("ALTER TABLE vendas2 ADD COLUMN forma_pagamento VARCHAR(20)");
             query.exec("ALTER TABLE vendas2 ADD COLUMN valor_recebido DECIMAL(10,2)");
@@ -130,7 +133,7 @@ SchemaMigration_service::Resultado SchemaMigration_service::update() {
             if (!db.transaction()) {
                 qDebug() << "Error: unable to start transaction";
             }
-            QSqlQuery query;
+            QSqlQuery query(db);
 
             query.exec("CREATE TABLE config (id INTEGER PRIMARY KEY AUTOINCREMENT, "
                        "key TEXT NOT NULL UNIQUE, "
@@ -158,7 +161,7 @@ SchemaMigration_service::Resultado SchemaMigration_service::update() {
                 QString descricaoNormalizada = Produto_Service::normalizeText(descricao);
 
                 // Atualizar a tabela produtos com a descrição normalizada
-                QSqlQuery updateQuery;
+                QSqlQuery updateQuery(db);
                 updateQuery.prepare("UPDATE produtos SET descricao = :descricao WHERE id = :id");
                 updateQuery.bindValue(":descricao", descricaoNormalizada);
                 updateQuery.bindValue(":id", id);
@@ -190,7 +193,7 @@ SchemaMigration_service::Resultado SchemaMigration_service::update() {
             if (!db.transaction()) {
                 qDebug() << "Error: unable to start transaction";
             }
-            QSqlQuery query;
+            QSqlQuery query(db);
 
             query.exec("CREATE TABLE entradas_vendas (id INTEGER PRIMARY KEY AUTOINCREMENT, "
                        "id_venda INTEGER, "
@@ -217,7 +220,7 @@ SchemaMigration_service::Resultado SchemaMigration_service::update() {
                 QString descricaoNormalizada = Produto_Service::normalizeText(descricao);
 
                 // Atualizar a tabela produtos com a descrição normalizada
-                QSqlQuery updateQuery;
+                QSqlQuery updateQuery(db);
                 updateQuery.prepare("UPDATE produtos SET descricao = :descricao WHERE id = :id");
                 updateQuery.bindValue(":descricao", descricaoNormalizada);
                 updateQuery.bindValue(":id", id);
@@ -239,7 +242,7 @@ SchemaMigration_service::Resultado SchemaMigration_service::update() {
                 int id = query.value(0).toInt();
                 // bool esta_pago = query.value(1).toInt();
 
-                QSqlQuery updateQuery;
+                QSqlQuery updateQuery(db);
                 updateQuery.prepare("UPDATE vendas2 SET esta_pago = 1 WHERE id = :id");
                 updateQuery.bindValue(":id", id);
 
@@ -271,7 +274,7 @@ SchemaMigration_service::Resultado SchemaMigration_service::update() {
                 qDebug() << "Error: unable to start transaction";
             }
 
-            QSqlQuery query;
+            QSqlQuery query(db);
 
             query.exec("CREATE TABLE clientes (id INTEGER PRIMARY KEY AUTOINCREMENT, "
                        "nome TEXT NOT NULL,"
@@ -350,7 +353,7 @@ SchemaMigration_service::Resultado SchemaMigration_service::update() {
                 qDebug() << "Error: unable to start transaction";
             }
 
-            QSqlQuery query;
+            QSqlQuery query(db);
             if(!query.exec("INSERT INTO config (key, value) VALUES ('nfant_empresa', '')")){
                 qDebug() << "nao inserir config nfant_empresa";
             }
@@ -562,7 +565,7 @@ SchemaMigration_service::Resultado SchemaMigration_service::update() {
                 qDebug() << "Error: unable to start transaction";
             }
 
-            QSqlQuery query;
+            QSqlQuery query(db);
 
             // Adicionar colunas à tabela produtos
             QStringList alterStatements = {
@@ -633,7 +636,7 @@ SchemaMigration_service::Resultado SchemaMigration_service::update() {
 
             QDateTime dataIngles = QDateTime::currentDateTime();
             QString dataFormatada = dataIngles.toString("yyyy-MM-dd HH:mm:ss");
-            QSqlQuery query;
+            QSqlQuery query(db);
 
             QStringList alterStatements = {
                 "ALTER TABLE notas_fiscais ADD COLUMN dhemi TEXT",

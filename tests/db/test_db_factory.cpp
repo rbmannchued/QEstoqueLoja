@@ -1,50 +1,36 @@
 #include "test_db_factory.h"
-#include <QSqlQuery>
-#include <QSqlError>
 #include <QDebug>
 #include <QDir>
+#include "infra/databaseconnection_service.h"
+#include "services/schemamigration_service.h"
 
 QSqlDatabase TestDbFactory::create()
 {
-    static int i = 0;
-    QString connName = "test_conn_" + QString::number(i++);
+    QString connName = "test_conn_1";
 
-    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", connName);
-
-    // // arquivo temporário real
     QString path = QDir::tempPath() + "/qestoque_test_" + connName + ".db";
+
+    // cria conexão nomeada
+    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", connName);
     db.setDatabaseName(path);
 
-    // db.setDatabaseName(":memory:");
-
     if (!db.open()) {
-        qFatal("Falha ao abrir banco de teste");
+        qFatal("Erro ao abrir banco de teste");
     }
 
-    QSqlQuery q(db);
+    qDebug() << "Connection name:" << db.connectionName();
+    qDebug() << "Is open:" << db.isOpen();
+    qDebug() << "Path:" << path;
 
-    QString createTable = R"(
-        CREATE TABLE IF NOT EXISTS produtos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            quantidade INTEGER,
-            descricao TEXT,
-            preco DECIMAL(10,2),
-            codigo_barras VARCHAR(20),
-            nf BOOLEAN,
-            un_comercial TEXT,
-            preco_fornecedor DECIMAL(10,2) NULL,
-            porcent_lucro REAL,
-            ncm VARCHAR(8) DEFAULT '00000000',
-            cest TEXT NULL,
-            aliquota_imposto REAL NULL,
-            csosn VARCHAR(5),
-            pis VARCHAR(5),
-            local TEXT NULL
-        )
-    )";
+    // registra essa conexão no seu service
+    DatabaseConnection_service::setDatabase(db);
 
-    if (!q.exec(createTable)) {
-        qFatal(q.lastError().text().toUtf8());
+    // roda migration
+    SchemaMigration_service schema(nullptr, 7);
+    auto result = schema.update();
+
+    if (!result.ok) {
+        qFatal("Falha ao rodar schema migration no banco de teste");
     }
 
     return db;

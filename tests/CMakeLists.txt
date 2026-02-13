@@ -5,11 +5,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Qt Test
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Test Core Sql Gui )
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Test Core Sql Gui)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Test Core Sql Gui Widgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Test Core Sql Gui Widgets)
 
 if(CMAKE_SYSTEM MATCHES "Windows")
-
     include(FetchContent)
     FetchContent_Declare(
     zint
@@ -22,6 +21,7 @@ elseif(CMAKE_SYSTEM MATCHES "Linux")
     find_library(ZINT_LIBRARIES NAMES zint)
 
 endif()
+
 
 # ==============================
 # Fontes de teste
@@ -55,9 +55,26 @@ add_executable(QEstoqueLojaTests
     ${CMAKE_SOURCE_DIR}/src/repository/Produto_repository.cpp
     services/test_barcode_service.h services/test_barcode_service.cpp
     ${CMAKE_SOURCE_DIR}/src/services/barcode_service.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/schemamigration_service.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/schemamigration_service.h
+    ${CMAKE_SOURCE_DIR}/src/infra/databaseconnection_service.h
+    ${CMAKE_SOURCE_DIR}/src/infra/databaseconnection_service.cpp
+    ${CMAKE_SOURCE_DIR}/src/infra/apppath_service.h
+    ${CMAKE_SOURCE_DIR}/src/infra/apppath_service.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/config_service.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/config_service.h
+    ${CMAKE_SOURCE_DIR}/src/repository/config_repository.h
+    ${CMAKE_SOURCE_DIR}/src/repository/config_repository.cpp
+
+
+
+
+
+
 
 
 )
+target_compile_definitions(QEstoqueLojaTests PRIVATE TEST_ENV)
 
 # ==============================
 # Includes
@@ -81,6 +98,7 @@ target_link_libraries(QEstoqueLojaTests PRIVATE
     Qt${QT_VERSION_MAJOR}::Sql
     Qt${QT_VERSION_MAJOR}::Gui
     zint
+    Qt${QT_VERSION_MAJOR}::Widgets
 )
 
 

@@ -46,7 +46,10 @@ bool DatabaseConnection_service::init()
 bool DatabaseConnection_service::open()
 {
     init();
-    QSqlDatabase db = hasExternalDb ? externalDb : QSqlDatabase::database();
+
+    QSqlDatabase db = hasExternalDb
+                          ? externalDb
+                          : QSqlDatabase::database();
 
     if (!db.isOpen()) {
         if (!db.open()) {
@@ -56,10 +59,12 @@ bool DatabaseConnection_service::open()
     }
     return true;
 }
-
 void DatabaseConnection_service::close()
 {
-    QSqlDatabase db = hasExternalDb ? externalDb : QSqlDatabase::database();
+    QSqlDatabase db = hasExternalDb
+                          ? externalDb
+                          : QSqlDatabase::database();
+
     if (db.isOpen()) {
         db.close();
     }
@@ -68,6 +73,9 @@ void DatabaseConnection_service::close()
 QSqlDatabase DatabaseConnection_service::db()
 {
     init();
-    return hasExternalDb ? externalDb : QSqlDatabase::database();
+
+    return hasExternalDb
+               ? externalDb
+               : QSqlDatabase::database();
 }
 

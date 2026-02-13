@@ -1,18 +1,26 @@
 #include <QCoreApplication>
 #include <QtTest>
 
-#include "util/test_dbutil.h"
+#include "db/test_db_factory.h"
+#include "infra/databaseconnection_service.h"
+#include "services/schemamigration_service.h"
+
 #include "services/test_produto_service.h"
 #include "services/test_barcode_service.h"
+#include "util/test_dbutil.h"
+#include <QSqlDatabase>
 
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
     int status = 0;
+#ifdef TEST_ENV
+    TestDbFactory::create();
+#endif
 
-    status |= QTest::qExec(new TestDbUtil, argc, argv);
     status |= QTest::qExec(new TestProdutoService, argc, argv);
     status |= QTest::qExec(new test_barcode_service, argc, argv);
+
     return status;
 }
