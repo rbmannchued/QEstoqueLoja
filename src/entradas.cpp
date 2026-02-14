@@ -124,7 +124,7 @@ void Entradas::salvarRegistroDFe(
 void Entradas::on_Btn_ConsultarDF_clicked()
 {
     ManifestadorDFe *manifestdfe = new ManifestadorDFe(this);
-    if(manifestdfe->possoConsultar()){
+    if(dfeServ.possoConsultar()){
 
         manifestdfe->consultaAlternada();
         QMessageBox::information(this, "Resposta", "Consulta realizada com sucesso.");

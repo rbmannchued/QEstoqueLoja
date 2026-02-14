@@ -162,6 +162,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/repository/config_repository.h src/repository/config_repository.cpp
         src/services/config_service.h src/services/config_service.cpp
         src/services/imagestorage_service.h src/services/imagestorage_service.cpp
+        src/repository/dfeinfo_repository.h src/repository/dfeinfo_repository.cpp
+        src/services/dfe_service.h src/services/dfe_service.cpp
 
 
     )

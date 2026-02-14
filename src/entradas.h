@@ -7,7 +7,8 @@
 #include <QLocale>
 #include "nota/nfeacbr.h"
 #include <QSqlQueryModel>
-#include "../services/config_service.h"
+#include "services/dfe_service.h"
+#include "services/config_service.h"
 
 struct Cliente{
     QString nome;
@@ -64,6 +65,7 @@ private:
     QString cstatRetornado;
     QSqlQueryModel *modelEntradas;
     ConfigDTO configDTO;
+    Dfe_service dfeServ;
 
 
     void salvarRegistroDFe(const QString &nome_emitente, const QString &data_emissao, const QString &vnf, const QString &nsu, const QString &tipo, const QString &chave, const QString &cnpj, const QString &situacao, const QString &xml, const QString &data_recebimento);

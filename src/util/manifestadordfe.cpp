@@ -13,12 +13,16 @@
 #include <QDebug>
 #include <QDir>
 
+
 ManifestadorDFe::ManifestadorDFe(QObject *parent)
     : QObject{parent}
 {
-    db = QSqlDatabase::database();
+    db = DatabaseConnection_service::db();
+    // dfeServ = new Dfe_service();
+
     Config_service *confServ = new Config_service(this);
     configDTO = confServ->carregarTudo();
+
     cnpj = configDTO.cnpjEmpresa;
     cuf = configDTO.cUfFiscal;
     carregarConfigs();
@@ -27,19 +31,10 @@ void ManifestadorDFe::carregarConfigs(){
     auto acbr = AcbrManager::instance()->nfe();
     acbr->ConfigGravarValor("NFe", "ModeloDF", "0");
 }
+
 void ManifestadorDFe::consultaAlternada(){
-    if(!db.isOpen()){
-        if(!db.open()){
-            qDebug() << "Banco nao abriu consultaAlternada";
-        }
-    }
-    QSqlQuery q("SELECT identificacao FROM dfe_info ORDER BY datetime(data_modificado) DESC LIMIT 1");
+    QString ultimaAcao = dfeServ.getUltimaIdentificaçãoUsada();
 
-    QString ultimaAcao;
-
-    if (q.next()) {
-        ultimaAcao = q.value(0).toString();
-    }
 
     if (ultimaAcao == "consulta_xml") {
         consultarEManifestar();      // próxima ação
@@ -47,36 +42,12 @@ void ManifestadorDFe::consultaAlternada(){
         consultarEBaixarXML();       // próxima ação
     } else {
         // primeiro uso ou inconsistente
+        qDebug() << "Nao encontou ultima ação DFEINFO";
         consultarEManifestar();
     }
 
 }
-QString ManifestadorDFe::getUltNsu(){
-    if(!db.open()){
-        qDebug() << "não abriu bd getultnsu";
-    }
-    QSqlQuery query;
-    query.exec("SELECT ult_nsu FROM dfe_info WHERE identificacao = 'consulta_resumo'");
 
-    QString ultnsu;
-    while(query.next()){
-        ultnsu = query.value(0).toString();
-    }
-    return ultnsu;
-}
-QString ManifestadorDFe::getUltNsuXml(){
-    if(!db.open()){
-        qDebug() << "não abriu bd getultnsu";
-    }
-    QSqlQuery query;
-    query.exec("SELECT ult_nsu FROM dfe_info WHERE identificacao = 'consulta_xml'");
-
-    QString ultnsu;
-    while(query.next()){
-        ultnsu = query.value(0).toString();
-    }
-    return ultnsu;
-}
 
 void ManifestadorDFe::consultarEManifestar(){
     qDebug() << "consultar rodou";
@@ -93,7 +64,7 @@ void ManifestadorDFe::consultarEManifestar(){
     // qDebug() << retorno;
 
     auto acbr = AcbrManager::instance()->nfe();
-    ultimo_nsu = getUltNsu();
+    ultimo_nsu = dfeServ.getUltNsuResumo();
     qDebug() << "ultimo nsu achado no banco:" << ultimo_nsu;
     std::string retorno = acbr->DistribuicaoDFePorUltNSU(cuf.toInt(), cnpj.toStdString(), ultimo_nsu.toStdString());
     qDebug() << "Retorno consulta DFE" << retorno;
@@ -121,7 +92,7 @@ void ManifestadorDFe::consultarEManifestar(){
 void ManifestadorDFe::consultarEBaixarXML(){
     qDebug() << "rodou consultarEBaixarXML()";
     auto acbr = AcbrManager::instance()->nfe();
-    ultNsuXml = getUltNsuXml();
+    ultNsuXml = dfeServ.getUltNsuXml();
     std::string retorno = acbr->DistribuicaoDFePorUltNSU(cuf.toInt(), cnpj.toStdString(), ultNsuXml.toStdString());
     qDebug() << "Retorno consulta DFE" << retorno;
     qDebug() << "ult nsuxml: " << ultNsuXml;
@@ -166,33 +137,9 @@ void ManifestadorDFe::consultarEBaixarXML(){
             processarHeaderDfeXML(bloco);
     }
     if(novoUltNsuXml.toLongLong() > ultNsuXml.toLongLong()){
-        salvarNovoUltNsuXml(novoUltNsuXml);
+        dfeServ.salvarNovoUltNsuXml(novoUltNsuXml);
     }
 
-
-}
-
-void ManifestadorDFe::salvarNovoUltNsuXml(const QString &ultnsuxml){
-    if (!db.open()) {
-        qDebug() << "Erro ao abrir DB em salvarNovoUltNsu:" << db.lastError().text();
-        return;
-    }
-
-    QSqlQuery query(db);
-    QDateTime dataIngles = QDateTime::currentDateTime();
-    QString dataFormatada = dataIngles.toString("yyyy-MM-dd HH:mm:ss");
-
-    query.prepare("UPDATE dfe_info SET ult_nsu = :nsu, data_modificado = :datamod "
-                  "WHERE identificacao = 'consulta_xml'");
-    query.bindValue(":nsu", ultnsuxml);
-    query.bindValue(":datamod", dataFormatada);
-
-    if(!query.exec()){
-        qDebug() << "query update ultnsuxml falhou:" << query.lastError().text();
-        qDebug() << "SQL:" << query.lastQuery();
-    } else {
-        qDebug() << "query update ultnsuxml rodou ok";
-    }
 }
 
 void ManifestadorDFe::processarHeaderDfe(const QString &bloco){
@@ -222,12 +169,12 @@ void ManifestadorDFe::processarHeaderDfe(const QString &bloco){
 
     if (cStat != "138") {
         qDebug() << "Consulta retornou erro, não atualizou ultNSU!";
-        atualizarDataNsu(1);// 1 = atualiza consulta_resumo
+        dfeServ.atualizarDataNsu(TipoDfeInfo::ConsultaResumo);// 1 = atualiza consulta_resumo
         return;
     }
 
     // Somente sucesso > atualiza NSU
-    salvarNovoUltNsu(ultNsu);
+    dfeServ.salvarNovoUltNsuResumo(ultNsu);
 }
 
 void ManifestadorDFe::processarHeaderDfeXML(const QString &bloco){
@@ -257,60 +204,12 @@ void ManifestadorDFe::processarHeaderDfeXML(const QString &bloco){
 
     if (cStat != "138") {
         qDebug() << "Consulta retornou erro, não atualizou ultNSU!";
-        atualizarDataNsu(2);// 2 = atualiza consulta_xml
+        dfeServ.atualizarDataNsu(TipoDfeInfo::ConsultaXml);// 2 = atualiza consulta_xml
         return;
     }
-    atualizarDataNsu(2);
+    dfeServ.atualizarDataNsu(TipoDfeInfo::ConsultaXml);
     // // Somente sucesso > atualiza NSU
     // salvarNovoUltNsu(ultNsu);
-}
-
-void ManifestadorDFe::atualizarDataNsu(int option){
-    if (!db.open()) {
-        qDebug() << "Erro ao abrir DB em atualizarDataNsu:" << db.lastError().text();
-        return;
-    }
-    qDebug() << "atualizando data modificado nsu";
-    QString identificacao;
-    if(option == 1 ){
-        identificacao = "consulta_resumo";
-    }else{
-        identificacao = "consulta_xml";
-    }
-
-    QDateTime dataIngles = QDateTime::currentDateTime();
-    QString dataFormatada = dataIngles.toString("yyyy-MM-dd HH:mm:ss");
-    QSqlQuery query(db);
-    query.prepare("UPDATE dfe_info SET data_modificado = :datamod "
-                  "WHERE identificacao = :ide");
-    query.bindValue(":datamod", dataFormatada );
-    query.bindValue(":ide", identificacao);
-    if(!query.exec()){
-        qDebug() << "nao completou query atualizar data";
-    }
-}
-
-void ManifestadorDFe::salvarNovoUltNsu(const QString &ultNsu){
-    if (!db.open()) {
-        qDebug() << "Erro ao abrir DB em salvarNovoUltNsu:" << db.lastError().text();
-        return;
-    }
-    QDateTime dataIngles = QDateTime::currentDateTime();
-    QString dataFormatada = dataIngles.toString("yyyy-MM-dd HH:mm:ss");
-
-    QSqlQuery query(db);
-    query.prepare("UPDATE dfe_info SET ult_nsu = :nsu, data_modificado = :datamod "
-                  "WHERE identificacao = 'consulta_resumo'");
-    query.bindValue(":nsu", ultNsu);
-    query.bindValue(":datamod", dataFormatada);
-
-    if(!query.exec()){
-        qDebug() << "query update ultnsu falhou:" << query.lastError().text();
-        qDebug() << "SQL:" << query.lastQuery();
-    } else {
-        qDebug() << "query update ultnsu rodou ok";
-    }
-
 }
 
 void ManifestadorDFe::salvarResumoNota(ResumoNFe resumo){
@@ -986,46 +885,21 @@ Emitente ManifestadorDFe::lerEmitenteDoXML(const QString &xmlPath) {
     return e;
 }
 
-bool ManifestadorDFe::possoConsultar(){
-    if (!db.isOpen()) {
-        if (!db.open()) {
-            qDebug() << "Banco não abriu em possoConsultar";
-            return false;
+void ManifestadorDFe::consultarSePossivel(){
+    if(dfeServ.possoConsultar() &&
+        configDTO.emitNfFiscal && configDTO.tpAmbFiscal){
+
+        try {
+            consultarEManifestar();
         }
+        catch (const std::exception &e) {
+            qDebug() << "Erro ao consultar DFE:" << e.what();
+        }
+        catch (...) {
+            qDebug() << "Erro desconhecido ao consultar DFE";
+        }
+    }else{
+        qDebug() << "Nao consultado DFE";
+
     }
-
-    QSqlQuery query;
-
-    // Pega a MAIOR data_modificado (a mais recente), considerando xml e resumo
-    if (!query.exec("SELECT MAX(data_modificado) FROM dfe_info")) {
-        qDebug() << "Erro ao consultar dfe_info:" << query.lastError();
-        return false;
-    }
-
-    if (!query.next()) {
-        qDebug() << "Nenhum registro encontrado em dfe_info";
-        return true; // nunca consultou → pode consultar
-    }
-
-    QString dataModStr = query.value(0).toString();
-
-    if (dataModStr.isEmpty()) {
-        return true; // sem data registrada
-    }
-
-    QDateTime dataMod = QDateTime::fromString(dataModStr, "yyyy-MM-dd HH:mm:ss");
-
-    if (!dataMod.isValid()) {
-        qDebug() << "Data inválida em dfe_info:" << dataModStr;
-        return true; // se inválida, permite consultar
-    }
-
-    QDateTime agora = QDateTime::currentDateTime();
-
-    qint64 diff = dataMod.secsTo(agora);
-
-    qDebug() << "Diferença em segundos desde última consulta:" << diff;
-
-    // 1 hora = 3600s
-    return diff >= 3600;
 }

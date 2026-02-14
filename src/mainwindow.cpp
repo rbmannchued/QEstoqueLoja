@@ -45,6 +45,7 @@
 #include "infra/databaseconnection_service.h"
 #include "services/schemamigration_service.h"
 #include "services/config_service.h"
+#include "services/dfe_service.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -133,23 +134,7 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::verProd);
 
     ManifestadorDFe *manifestdfe = new ManifestadorDFe();
-
-    if(manifestdfe->possoConsultar() &&
-        configDTO.emitNfFiscal && configDTO.tpAmbFiscal){
-
-        try {
-            manifestdfe->consultarEManifestar();
-        }
-        catch (const std::exception &e) {
-            qDebug() << "Erro ao consultar DFE:" << e.what();
-        }
-        catch (...) {
-            qDebug() << "Erro desconhecido ao consultar DFE";
-        }
-    }else{
-        qDebug() << "Nao consultado DFE";
-
-    }
+    manifestdfe->consultarSePossivel();
 
 }
 

@@ -7,6 +7,8 @@
 #include <QSqlDatabase>
 #include "../nota/eventocienciaop.h"
 #include "../services/config_service.h"
+#include "../services/dfe_service.h"
+#include "../infra/databaseconnection_service.h"
 
 struct ResumoNFe {
     QString chave;
@@ -87,10 +89,8 @@ public:
     bool enviarCienciaOperacao(const QString &chNFe, const QString &cnpjEmit);
     void consultarEManifestar();
     void consultarEBaixarXML();
-    QString getUltNsu();
-    QString getUltNsuXml();
-    bool possoConsultar();
     void consultaAlternada();
+    void consultarSePossivel();
 private:
     QSqlDatabase db;
     ConfigDTO configDTO;
@@ -98,6 +98,8 @@ private:
     QString ultimo_nsu;
     QString ultNsuXml;
     QString novoUltNsuXml;
+    Dfe_service dfeServ;
+
 
     void salvarEventoNoBanco(const QString &tipo, const EventoRetornoInfo &info, const QString &chaveNFe);
     void carregarConfigs();
@@ -111,8 +113,6 @@ private:
     Emitente lerEmitenteDoXML(const QString &xmlPath);
     NotaFiscal lerNotaFiscalDoXML(const QString &xmlPath);
     bool atualizarNotaBanco(ProcNfe notaInfo);
-    void salvarNovoUltNsuXml(const QString &ultnsuxml);
-    void atualizarDataNsu(int option);
     void processarHeaderDfeXML(const QString &bloco);
     QList<ProdutoNota> carregarProdutosDaNFe(const QString &xml_path, qlonglong id_nf);
     bool salvarProdutosNota(const QString &xml_path, const QString &chnfe);
