@@ -164,6 +164,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/services/imagestorage_service.h src/services/imagestorage_service.cpp
         src/repository/dfeinfo_repository.h src/repository/dfeinfo_repository.cpp
         src/services/dfe_service.h src/services/dfe_service.cpp
+        src/dto/NotaFiscal_dto.h
+        src/repository/notafiscal_repository.h src/repository/notafiscal_repository.cpp
+        src/util/datautil.h src/util/datautil.cpp
+        src/services/notafiscal_service.h src/services/notafiscal_service.cpp
 
 
     )

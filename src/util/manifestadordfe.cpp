@@ -12,6 +12,7 @@
 #include <QSqlError>
 #include <QDebug>
 #include <QDir>
+#include "../services/acbr_service.h"
 
 
 ManifestadorDFe::ManifestadorDFe(QObject *parent)
@@ -23,13 +24,14 @@ ManifestadorDFe::ManifestadorDFe(QObject *parent)
     Config_service *confServ = new Config_service(this);
     configDTO = confServ->carregarTudo();
 
+    portugues = QLocale(QLocale::Portuguese, QLocale::Brazil);
     cnpj = configDTO.cnpjEmpresa;
     cuf = configDTO.cUfFiscal;
     carregarConfigs();
 }
 void ManifestadorDFe::carregarConfigs(){
-    auto acbr = AcbrManager::instance()->nfe();
-    acbr->ConfigGravarValor("NFe", "ModeloDF", "0");
+    Acbr_service acbrServ;
+    acbrServ.carregarConfigParaDFE();
 }
 
 void ManifestadorDFe::consultaAlternada(){
@@ -89,6 +91,7 @@ void ManifestadorDFe::consultarEManifestar(){
             processarHeaderDfe(bloco);
     }
 }
+
 void ManifestadorDFe::consultarEBaixarXML(){
     qDebug() << "rodou consultarEBaixarXML()";
     auto acbr = AcbrManager::instance()->nfe();
@@ -173,6 +176,9 @@ void ManifestadorDFe::processarHeaderDfe(const QString &bloco){
         return;
     }
 
+    //somente para tirar os 00000 da frente no numero
+    ultNsu = QString::number(ultNsu.toLongLong());
+
     // Somente sucesso > atualiza NSU
     dfeServ.salvarNovoUltNsuResumo(ultNsu);
 }
@@ -212,35 +218,11 @@ void ManifestadorDFe::processarHeaderDfeXML(const QString &bloco){
     // salvarNovoUltNsu(ultNsu);
 }
 
-void ManifestadorDFe::salvarResumoNota(ResumoNFe resumo){
-    if(!db.isOpen()){
-        qDebug() << "db nao aberto ao salvar resumo nota";
-    }
-    QDateTime dataIngles = QDateTime::currentDateTime();
-    QString dataFormatada = dataIngles.toString("yyyy-MM-dd HH:mm:ss");
-    QLocale portugues(QLocale::Portuguese, QLocale::Brazil);
-    QSqlQuery query;
-    query.prepare("INSERT INTO notas_fiscais (cstat, modelo, tp_amb, xml_path, valor_total, atualizado_em,"
-                  "cnpjemit, chnfe, nprot, cuf, finalidade, saida, nnf, serie) VALUES (:cstat, :modelo,"
-                  " :tpamb, :xmlpath, :vnf, :atualizadoem, :cnpjemit, :chnf, :nprot, :cuf, :finalidade, "
-                  ":saida, :nnf, :serie)");
-    query.bindValue(":cstat", resumo.cstat);
-    query.bindValue(":modelo", "55");
-    query.bindValue(":tpamb", configDTO.tpAmbFiscal);
-    query.bindValue(":xmlpath", resumo.xml_path);
-    query.bindValue(":vnf", portugues.toString(resumo.vnf.toDouble()));
-    query.bindValue(":atualizadoem", dataFormatada);
-    query.bindValue(":cnpjemit", resumo.cnpjEmit);
-    query.bindValue(":chnf", resumo.chave);
-    query.bindValue(":nprot", resumo.nProt);
-    query.bindValue(":cuf", "");
-    query.bindValue(":finalidade", resumo.schema);
-    query.bindValue(":saida", "0");
-    query.bindValue(":nnf", "0");
-    query.bindValue(":serie", "");
+void ManifestadorDFe::salvarResumoNota(NotaFiscalDTO resumo){
+    auto resultado = nfServ.salvarResNfe(resumo);
 
-    if(!query.exec()){
-        qDebug() << "ERRO INSERT notas_fiscais:" << query.lastError().text();
+    if(!resultado.ok){
+        qDebug() << resultado.msg;
     } else {
         qDebug() << "Resumo nota salvo com sucesso!";
     }
@@ -262,15 +244,19 @@ void ManifestadorDFe::processarResumo(const QString &bloco)
     };
 
 
-    ResumoNFe resumo;
-    resumo.chave    = campo("chDFe");
-    resumo.nome     = campo("xNome");
-    resumo.cnpjEmit = campo("CNPJCPF");
-    resumo.schema   = campo("schema");
-    resumo.vnf      = campo("vNF");
-    resumo.cstat    = campo("CStat");
-    resumo.nProt    = campo("nProt");
-    resumo.dhEmi    = campo("dhEmi");
+    NotaFiscalDTO resumo;
+    resumo.chNfe      = campo("chDFe");
+    // resumo.nome     = campo("xNome");
+    QString nome     = campo("xNome");
+    resumo.cnpjEmit   = campo("CNPJCPF");
+    resumo.finalidade = campo("schema");
+    QString vnf = campo("vNF");
+    resumo.cstat      = campo("CStat");
+    resumo.nProt      = campo("nProt");
+    resumo.dhEmi      = campo("dhEmi");
+    resumo.tpAmb = 1; //NOVO refactoring
+
+    resumo.valorTotal = vnf.toDouble();
 
     QString path = campo("arquivo");
 
@@ -282,16 +268,16 @@ void ManifestadorDFe::processarResumo(const QString &bloco)
     // Remove duplicações tipo //
     path = QDir::cleanPath(path);
 
-    resumo.xml_path = path;
+    resumo.xmlPath = path;
 
     // Apenas resumos válidos
-    if (!resumo.schema.contains("resNFe"))
+    if (!resumo.finalidade.contains("resNFe"))
         return;
 
-    qDebug() << "\nResumo localizado:" << resumo.chave << resumo.nome;
+    qDebug() << "\nResumo localizado:" << resumo.chNfe << nome;
 
     salvarResumoNota(resumo);
-    enviarCienciaOperacao(resumo.chave, resumo.cnpjEmit);
+    enviarCienciaOperacao(resumo.chNfe, resumo.cnpjEmit);
 }
 
 
@@ -318,16 +304,18 @@ void ManifestadorDFe::processarNota(const QString &bloco)
     };
 
 
-    ProcNfe nfe;
-    nfe.chave    = campoTexto("chDFe");
-    nfe.nome     = campoTexto("xNome");
+    NotaFiscalDTO nfe;
+    nfe.chNfe    = campoTexto("chDFe");
+    // nfe.nome     = campoTexto("xNome");
+    QString nome     = campoTexto("xNome");
     nfe.cnpjEmit = campoTexto("CNPJCPF");
-    nfe.schema   = campoTexto("schema");
-    nfe.vnf      = campoTexto("vNF");
+    nfe.finalidade   = campoTexto("schema");
+    QString vnf      = campoTexto("vNF");
     nfe.cstat    = campoTexto("CStat");
     nfe.nProt    = campoTexto("nProt");
     nfe.dhEmi    = campoTexto("dhEmi");
-    nfe.cSitNfe  = campoTexto("cSitNFe");
+    QString cSitNfe  = campoTexto("cSitNFe");
+    nfe.valorTotal = portugues.toString(vnf.toDouble()).toDouble();
 
     QString path = campoTexto("arquivo");
 
@@ -339,31 +327,33 @@ void ManifestadorDFe::processarNota(const QString &bloco)
     // Remove duplicações tipo //
     path = QDir::cleanPath(path);
 
-    nfe.xml_path = path;
+    nfe.xmlPath = path;
 
-    nfe.nsu      = campoNumero("NSU");
+    // nfe.nsu      = campoNumero("NSU"); //--**
+    QString nsu      = campoNumero("NSU");
+
 
     // Não processa resumos inválidos
-    if (!nfe.schema.contains("procNFe"))
+    if (!nfe.finalidade.contains("procNFe"))
         return;
 
     qDebug() << "\n+++ Nota XML localizado +++";
-    qDebug() << "Chave:" << nfe.chave;
-    qDebug() << "NSU capturado:" << nfe.nsu;
-    qDebug() << "Emitente:" << nfe.nome;
+    qDebug() << "Chave:" << nfe.chNfe;
+    qDebug() << "NSU capturado:" << nsu;
+    qDebug() << "Emitente:" << nome;
 
-    if (nfe.cSitNfe == "1")
+    if (cSitNfe == "1")
     {
         if (salvarEmitenteCliente(nfe) && atualizarNotaBanco(nfe))
         {
-            qlonglong nsuInt = nfe.nsu.toLongLong();
+            qlonglong nsuInt = nsu.toLongLong();
 
             if (nsuInt > novoUltNsuXml.toLongLong())
             {
                 novoUltNsuXml = QString::number(nsuInt);
                 qDebug() << "Novo ultNSU atualizado para:" << novoUltNsuXml;
             }
-            if(salvarProdutosNota(nfe.xml_path, nfe.chave)){
+            if(salvarProdutosNota(nfe.xmlPath, nfe.chNfe)){
                 qDebug() << "Salvou os produtos da nota";
             }else{
                 qDebug() << "Não salvou os produtos da nota";
@@ -377,27 +367,9 @@ void ManifestadorDFe::processarNota(const QString &bloco)
 }
 
 bool ManifestadorDFe::salvarProdutosNota(const QString &xml_path, const QString &chnfe){
-    if(!db.isOpen()){
-        if(!db.open()){
-            qDebug() << "bd nao abriu salvarProdutosNota()";
-            return false;
-        }
-    }
+    qlonglong id_nf = nfServ.getIdFromChave(chnfe);
 
-    QSqlQuery query;
-    query.prepare("SELECT id FROM notas_fiscais WHERE chnfe = :chnfe");
-    query.bindValue(":chnfe", chnfe);
-    QString id_nf = "";
-    if(query.exec()){
-        while(query.next()){
-            id_nf = query.value(0).toString();
-        }
-    }else{
-        qDebug() << "nao rodou query select idnf";
-        return false;
-    }
-
-    QList<ProdutoNota> produtos = carregarProdutosDaNFe(xml_path, id_nf.toLongLong());
+    QList<ProdutoNota> produtos = carregarProdutosDaNFe(xml_path, id_nf);
 
     if (produtos.isEmpty()) {
         qDebug() << "Nenhum produto encontrado no XML";
@@ -547,19 +519,19 @@ QList<ProdutoNota> ManifestadorDFe::carregarProdutosDaNFe(const QString &xml_pat
     return lista;
 }
 
-bool ManifestadorDFe::atualizarNotaBanco(ProcNfe notaInfo){
-    NotaFiscal nf = lerNotaFiscalDoXML(notaInfo.xml_path);
-    qDebug() << "XML PATH atualizar NOTA BANCO: " << notaInfo.xml_path;
+bool ManifestadorDFe::atualizarNotaBanco(NotaFiscalDTO notaInfo){
+    NotaFiscalDTO nf = nfServ.lerNotaFiscalDoXML(notaInfo.xmlPath);
+    qDebug() << "XML PATH atualizar NOTA BANCO: " << notaInfo.xmlPath;
     if(!db.isOpen()){
         if(!db.open()){
             qDebug() << "banco nao abriu atualizarNotaBanco";
             return false;
         }
     }
-    QSqlQuery q;
+    QSqlQuery q(db);
     int idcliente;
     q.prepare("SELECT id FROM clientes WHERE cpf = :cnpjemit");
-    q.bindValue(":cnpjemit", nf.cnpjemit);
+    q.bindValue(":cnpjemit", nf.cnpjEmit);
     if(!q.exec()){
         qDebug() << "nao executou query para achar idcliente em atualizarNotaBanco()";
         return false;
@@ -569,58 +541,17 @@ bool ManifestadorDFe::atualizarNotaBanco(ProcNfe notaInfo){
             idcliente = q.value(0).toInt();
         }
     }
-    QString dhemi = notaInfo.dhEmi;
-    QDateTime dt = QDateTime::fromString(dhemi, "dd/MM/yyyy HH:mm:ss");
-    QString dhemiFormatada = dt.toString("yyyy-MM-dd HH:mm:ss");
-    QDateTime dataIngles = QDateTime::currentDateTime();
-    QString dataFormatada = dataIngles.toString("yyyy-MM-dd HH:mm:ss");
-    q.prepare("UPDATE notas_fiscais SET "
-              "cstat = :cstat, "
-              "nnf = :nnf, "
-              "serie = :serie, "
-              "modelo = :modelo, "
-              "tp_amb = :tp_amb, "
-              "xml_path = :xml_path, "
-              "valor_total = :valor_total, "
-              "cnpjemit = :cnpjemit, "
-              "nprot = :nprot, "
-              "cuf = :cuf, "
-              "atualizado_em = :atualizadoem, "
-              "finalidade = :finalidade, "
-              "saida = :saida, "
-              "id_emissorcliente = :idcliente, "
-              "dhemi = :dhemi "
-              "WHERE chnfe = :chnfe");
-    q.bindValue(":cstat", nf.cstat);
-    q.bindValue(":nnf", nf.nnf);
-    q.bindValue(":serie", nf.serie);
-    q.bindValue(":modelo", nf.modelo);
-    q.bindValue(":tp_amb", nf.tp_amb);
-    q.bindValue(":xml_path", nf.xml_path);
-    q.bindValue(":valor_total", nf.valor_total);
-    q.bindValue(":cnpjemit", nf.cnpjemit);
-    q.bindValue(":nprot", nf.nprot);
-    q.bindValue(":cuf", nf.cuf);
-    q.bindValue(":chnfe", nf.chnfe);
-    q.bindValue(":atualizadoem", dataFormatada);
-    q.bindValue(":finalidade", "ENTRADA EXTERNA");
-    q.bindValue(":saida", "0");
-    q.bindValue(":idcliente", idcliente);
-    q.bindValue(":dhemi", dhemiFormatada);
-
-
-    if (!q.exec()){
-        qDebug() << "Erro ao atualizar NF:" << q.lastError();
+    auto r1 = nfServ.updateWhereChave(nf, notaInfo.chNfe);
+    if(!r1.ok){
+        qDebug() << r1.msg;
         return false;
     }else{
-        qDebug() << "Nota fiscal atualizada com sucesso!";
+        return true;
     }
-    qDebug() << "Linhas afetadas:" << q.numRowsAffected();
-    return true;
 }
 
-bool ManifestadorDFe::salvarEmitenteCliente(ProcNfe notaInfo){
-    Emitente emi = lerEmitenteDoXML(notaInfo.xml_path);
+bool ManifestadorDFe::salvarEmitenteCliente(NotaFiscalDTO notaInfo){
+    Emitente emi = lerEmitenteDoXML(notaInfo.xmlPath);
 
     if(!db.open()){
         qDebug() << "banco de dados nao aberto salvarEmitenteCliente";
@@ -692,84 +623,6 @@ bool ManifestadorDFe::salvarEmitenteCliente(ProcNfe notaInfo){
 
 }
 
-NotaFiscal ManifestadorDFe::lerNotaFiscalDoXML(const QString &xmlPath)
-{
-    NotaFiscal nf;
-    nf.xml_path = xmlPath;
-
-    QFile file(xmlPath);
-
-    if (!file.open(QIODevice::ReadOnly)) {
-        qWarning() << "Erro ao abrir XML:" << xmlPath;
-        return nf;
-    }
-
-    QDomDocument doc;
-    if (!doc.setContent(&file)) {
-        qWarning() << "Erro ao carregar XML:" << xmlPath;
-        file.close();
-        return nf;
-    }
-    file.close();
-
-    auto getTag = [&](const QDomElement &parent, const QString &tag) {
-        QDomNode n = parent.elementsByTagName(tag).item(0);
-        return n.isNull() ? QString() : n.toElement().text().trimmed();
-    };
-
-    // Pegando nó nfeProc ou NFe
-    QDomNodeList listaInfNFe = doc.elementsByTagName("infNFe");
-    if (listaInfNFe.isEmpty()) {
-        qWarning() << "XML sem <infNFe>";
-        return nf;
-    }
-
-    QDomElement infNFe = listaInfNFe.at(0).toElement();
-
-    // CHAVE DA NFE (atributo Id removendo "NFe")
-    QString id = infNFe.attribute("Id");
-    if (id.startsWith("NFe"))
-        nf.chnfe = id.mid(3);
-
-    // --- TAGS DIRETAS DO INFNFE ---
-    QDomNodeList ideList = infNFe.elementsByTagName("ide");
-    if (!ideList.isEmpty()) {
-        QDomElement ide = ideList.at(0).toElement();
-        nf.cuf   = getTag(ide, "cUF");
-        nf.nnf   = getTag(ide, "nNF").toInt();
-        nf.serie = getTag(ide, "serie");
-        nf.modelo = getTag(ide, "mod");
-        nf.tp_amb = (getTag(ide, "tpAmb") == "1");  // 1 = produção
-    }
-
-    // --- VALOR TOTAL DA NOTA ---
-    QDomNodeList totalList = infNFe.elementsByTagName("ICMSTot");
-    if (!totalList.isEmpty()) {
-        QDomElement tot = totalList.at(0).toElement();
-        nf.valor_total = getTag(tot, "vNF").toDouble();
-    }
-
-    // --- EMITENTE ---
-    QDomNodeList emitList = infNFe.elementsByTagName("emit");
-    if (!emitList.isEmpty()) {
-        QDomElement emite = emitList.at(0).toElement();
-        nf.cnpjemit = getTag(emite, "CNPJ");
-    }
-
-    // --- <protNFe> (protocolo) ---
-    QDomNodeList protList = doc.elementsByTagName("protNFe");
-    if (!protList.isEmpty()) {
-        QDomElement prot = protList.at(0).toElement();
-        QDomElement infProt = prot.elementsByTagName("infProt").item(0).toElement();
-
-        nf.cstat = getTag(infProt, "cStat");
-        nf.nprot = getTag(infProt, "nProt");
-    }
-
-    return nf;
-}
-
-
 
 bool ManifestadorDFe::enviarCienciaOperacao(const QString &chNFe, const QString &cnpjEmit)
 {
@@ -796,17 +649,9 @@ void ManifestadorDFe::salvarEventoNoBanco(const QString &tipo, const EventoRetor
     }
 
     QSqlQuery q;
-    QString idnf;
-    q.prepare("SELECT id FROM notas_fiscais WHERE chnfe = :chnfe");
-    q.bindValue(":chnfe", chaveNFe);
-    if(!q.exec()){
-        qDebug() << "nao executouy query para achar idnf no evneto ciencia";
+    qlonglong idnf;
 
-    }else{
-        if (q.next()) {
-            idnf = q.value(0).toString();
-        }
-    }
+    idnf = nfServ.getIdFromChave(chaveNFe);
 
 
     q.prepare(R"(

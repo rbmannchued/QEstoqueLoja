@@ -9,18 +9,10 @@
 #include "../services/config_service.h"
 #include "../services/dfe_service.h"
 #include "../infra/databaseconnection_service.h"
+#include "../services/notafiscal_service.h"
+#include "../dto/NotaFiscal_dto.h"
+#include <qlocale.h>
 
-struct ResumoNFe {
-    QString chave;
-    QString nome;
-    QString cnpjEmit;
-    QString schema;
-    QString vnf;
-    QString cstat;
-    QString xml_path;
-    QString nProt;
-    QString dhEmi;
-};
 
 struct ProcNfe {
     QString chave;
@@ -99,6 +91,9 @@ private:
     QString ultNsuXml;
     QString novoUltNsuXml;
     Dfe_service dfeServ;
+    NotaFiscal_service nfServ;
+    QLocale portugues;
+
 
 
     void salvarEventoNoBanco(const QString &tipo, const EventoRetornoInfo &info, const QString &chaveNFe);
@@ -106,13 +101,12 @@ private:
     void processarHeaderDfe(const QString &bloco);
     void salvarNovoUltNsu(const QString &ultNsu);
     bool existeCienciaOperacao(const QString &chNFe);
-    void salvarResumoNota(ResumoNFe resumo);
+    void salvarResumoNota(NotaFiscalDTO resumo);
     void processarResumo(const QString &bloco);
     void processarNota(const QString &bloco);
-    bool salvarEmitenteCliente(ProcNfe notaInfo);
+    bool salvarEmitenteCliente(NotaFiscalDTO notaInfo);
     Emitente lerEmitenteDoXML(const QString &xmlPath);
-    NotaFiscal lerNotaFiscalDoXML(const QString &xmlPath);
-    bool atualizarNotaBanco(ProcNfe notaInfo);
+    bool atualizarNotaBanco(NotaFiscalDTO notaInfo);
     void processarHeaderDfeXML(const QString &bloco);
     QList<ProdutoNota> carregarProdutosDaNFe(const QString &xml_path, qlonglong id_nf);
     bool salvarProdutosNota(const QString &xml_path, const QString &chnfe);
