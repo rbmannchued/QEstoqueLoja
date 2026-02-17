@@ -168,6 +168,9 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/repository/notafiscal_repository.h src/repository/notafiscal_repository.cpp
         src/util/datautil.h src/util/datautil.cpp
         src/services/notafiscal_service.h src/services/notafiscal_service.cpp
+        src/dto/ProdutoNota_dto.h
+        src/repository/produtonota_repository.h src/repository/produtonota_repository.cpp
+        src/services/produtonota_service.h src/services/produtonota_service.cpp
 
 
     )

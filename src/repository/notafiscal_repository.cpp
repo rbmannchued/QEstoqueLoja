@@ -82,7 +82,7 @@ bool notafiscal_repository::updateWhereChave(NotaFiscalDTO dto, QString chave){
     QSqlQuery q(db);
     qDebug() << "Data DHEMI updateWHERECHAVE: " << dto.dhEmi;
     QString dhemi = dto.dhEmi;
-    QDateTime dt = QDateTime::fromString(dhemi, "dd/MM/yyyy HH:mm:ss");
+    QDateTime dt = QDateTime::fromString(dhemi, Qt::ISODate);//formato do dhemi no xml
     QString dhemiFormatada = dt.toString("yyyy-MM-dd HH:mm:ss");
 
 

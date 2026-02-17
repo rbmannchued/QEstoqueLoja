@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include "../repository/notafiscal_repository.h"
+#include "../dto/ProdutoNota_dto.h"
 enum class NotaErro{
     Nenhum,
     Banco,
@@ -24,6 +25,7 @@ public:
     qlonglong getIdFromChave(QString chnfe);
     NotaFiscal_service::Resultado updateWhereChave(NotaFiscalDTO dto, QString chave);
     NotaFiscalDTO lerNotaFiscalDoXML(const QString &xmlPath);
+    QList<ProdutoNotaDTO> carregarProdutosDaNFe(const QString &xml_path, qlonglong id_nf);
 private:
     notafiscal_repository notaRepo;
 

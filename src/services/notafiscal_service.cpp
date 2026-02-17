@@ -81,6 +81,7 @@ NotaFiscalDTO NotaFiscal_service::lerNotaFiscalDoXML(const QString &xmlPath)
         nf.serie = getTag(ide, "serie").toInt();
         nf.modelo = getTag(ide, "mod");
         nf.tpAmb = (getTag(ide, "tpAmb") == "1");  // 1 = produção
+        nf.dhEmi = getTag(ide, "dhEmi");
     }
 
     // --- VALOR TOTAL DA NOTA ---
@@ -109,3 +110,110 @@ NotaFiscalDTO NotaFiscal_service::lerNotaFiscalDoXML(const QString &xmlPath)
 
     return nf;
 }
+
+
+QList<ProdutoNotaDTO> NotaFiscal_service::carregarProdutosDaNFe(const QString &xml_path, qlonglong id_nf)
+{
+    QList<ProdutoNotaDTO> lista;
+
+    QFile file(xml_path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qDebug() << "Erro ao abrir arquivo XML:" << xml_path;
+        return lista;
+    }
+
+    QDomDocument doc;
+    if (!doc.setContent(&file)) {
+        qDebug() << "Erro ao ler conteúdo do XML";
+        file.close();
+        return lista;
+    }
+    file.close();
+
+    QDomNodeList itens = doc.elementsByTagName("det");
+
+    for (int i = 0; i < itens.count(); i++) {
+        QDomElement det = itens.at(i).toElement();
+
+        ProdutoNotaDTO p;
+        p.idNf = id_nf;
+
+        p.nitem = det.attribute("nItem").toInt();
+
+        QDomElement prod = det.firstChildElement("prod");
+
+        p.descricao          = prod.firstChildElement("xProd").text();
+        p.codigoBarras    = prod.firstChildElement("cEAN").text();
+        p.uCom  = prod.firstChildElement("uCom").text();
+        p.ncm           = prod.firstChildElement("NCM").text();
+        p.cfop          = prod.firstChildElement("CFOP").text();
+        p.quantidade         = prod.firstChildElement("qCom").text().replace(",", ".").toDouble();
+        p.preco         = prod.firstChildElement("vUnCom").text().replace(",", ".").toDouble();
+
+        // ======= IMPOSTOS =======
+        QDomElement imposto = det.firstChildElement("imposto");
+
+        // -------------------- CSOSN ou CST ICMS --------------------
+        p.csosn = "";
+        p.cstIcms = "";
+        p.temSt = false;
+
+        QDomElement icms = imposto.firstChildElement("ICMS");
+
+        QStringList gruposICMS = {
+            "ICMS00","ICMS10","ICMS20","ICMS30","ICMS40","ICMS51","ICMS60","ICMS70","ICMS90",
+            "ICMSSN101","ICMSSN102","ICMSSN201","ICMSSN202","ICMSSN500","ICMSSN900"
+        };
+
+        for (const QString &g : gruposICMS) {
+            QDomElement e = icms.firstChildElement(g);
+            if (!e.isNull()) {
+
+                // pega CST ou CSOSN
+                QString CST = e.firstChildElement("CST").text();
+                QString CSOSN = e.firstChildElement("CSOSN").text();
+
+                if (!CSOSN.isEmpty())
+                    p.csosn = CSOSN;
+
+                if (!CST.isEmpty())
+                    p.cstIcms = CST;
+
+                // identifica ST
+                if (g == "ICMS10" || g == "ICMS30" || g == "ICMS60" ||
+                    g == "ICMS70" || g == "ICMSSN201" || g == "ICMSSN202") {
+                    p.temSt = true;
+                }
+
+                // valida ST por valores
+                if (!e.firstChildElement("vBCST").isNull() ||
+                    !e.firstChildElement("vICMSST").isNull() ||
+                    !e.firstChildElement("vBCSTRet").isNull() ||
+                    !e.firstChildElement("vICMSSTRet").isNull())
+                {
+                    p.temSt = true;
+                }
+
+                break;
+            }
+        }
+
+        // -------------------- PIS --------------------
+        QDomNodeList listaPIS = imposto.elementsByTagName("PISOutr");
+        if (listaPIS.isEmpty())
+            listaPIS = imposto.elementsByTagName("PISNT");
+
+        if (!listaPIS.isEmpty())
+            p.pis = listaPIS.at(0).firstChildElement("CST").text();
+        else
+            p.pis = "";
+
+        QString aliquota = listaPIS.at(0).firstChildElement("pPIS").text();
+        p.aliquotaIcms = aliquota.replace(",", ".").toDouble();
+
+        lista.append(p);
+    }
+
+    return lista;
+}
+
