@@ -29,11 +29,11 @@ InserirProduto::InserirProduto(QWidget *parent)
     }
     carregarConfiguracoes();
 
-    ui->Ledit_PercentualLucro->setText(financeiroValues.value("porcent_lucro"));
-    ui->Ledit_NCM->setText(produtoValues.value("ncm_padrao"));
-    ui->Ledit_CSOSN->setText(produtoValues.value("csosn_padrao"));
-    ui->Ledit_PIS->setText(produtoValues.value("pis_padrao"));
-    ui->Ledit_CEST->setText(produtoValues.value("cest_padrao"));
+    ui->Ledit_PercentualLucro->setText(QString::number(configDTO.porcentLucroFinanceiro));
+    ui->Ledit_NCM->setText(configDTO.ncmPadraoProduto);
+    ui->Ledit_CSOSN->setText(configDTO.csosnPadraoProduto);
+    ui->Ledit_PIS->setText(configDTO.pisPadraoProduto);
+    ui->Ledit_CEST->setText(configDTO.cestPadraoProduto);
 
     QIntValidator *intValidador = new QIntValidator(1,999);
     QDoubleValidator *DoubleValidador = new QDoubleValidator(0.0, 9999.99, 2);
@@ -67,8 +67,8 @@ InserirProduto::~InserirProduto()
 }
 
 void InserirProduto::carregarConfiguracoes(){
-    financeiroValues = Configuracao::get_All_Financeiro_Values();
-    produtoValues = Configuracao::get_All_Produto_Values();
+    Config_service *confServ = new Config_service(this);
+    configDTO = confServ->carregarTudo();
 }
 
 void InserirProduto::preencherCamposProduto(

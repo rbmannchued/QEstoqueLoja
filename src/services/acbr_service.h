@@ -3,11 +3,16 @@
 
 #include <QObject>
 #include <QMap>
+#include "../services/config_service.h"
+#include "../util/mailmanager.h"
+#include "../nota/acbrmanager.h"
+#include "../util/consultacnpjmanager.h"
 
 enum class AcbrErro {
     Nenhum,
     CampoVazio,
-    ConfiguracaoInvalida
+    ConfiguracaoInvalida,
+    NaoEmitindoNf
 };
 
 class Acbr_service : public QObject
@@ -22,11 +27,12 @@ public:
     };
     explicit Acbr_service(QObject *parent = nullptr);
     Acbr_service::Resultado configurar(const QString &versaoApp);
+    Acbr_service::Resultado carregarConfigParaDFE();
 private:
-    QMap<QString, QString> financeiroValues;
-    QMap<QString, QString> fiscalValues;
-    QMap<QString, QString> empresaValues;
-    QMap<QString, QString> emailValues;
+    ConfigDTO configDTO;
+    ACBrNFe *nfe;
+    ACBrMail *mail;
+    ACBrConsultaCNPJ *cnpj;
 
 signals:
 };

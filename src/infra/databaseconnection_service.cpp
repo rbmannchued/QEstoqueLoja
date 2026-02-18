@@ -5,13 +5,24 @@
 
 bool DatabaseConnection_service::initialized = false;
 
+static QSqlDatabase externalDb;
+static bool hasExternalDb = false;
+
 DatabaseConnection_service::DatabaseConnection_service(QObject *parent)
     : QObject{parent}
 {}
 
+void DatabaseConnection_service::setDatabase(QSqlDatabase database)
+{
+    externalDb = database;
+    hasExternalDb = true;
+    initialized = true;
+}
 
 bool DatabaseConnection_service::init()
 {
+
+    if (hasExternalDb) return true;
     if (initialized) return true;
 
     try {
@@ -35,7 +46,10 @@ bool DatabaseConnection_service::init()
 bool DatabaseConnection_service::open()
 {
     init();
-    QSqlDatabase db = QSqlDatabase::database();
+
+    QSqlDatabase db = hasExternalDb
+                          ? externalDb
+                          : QSqlDatabase::database();
 
     if (!db.isOpen()) {
         if (!db.open()) {
@@ -45,10 +59,12 @@ bool DatabaseConnection_service::open()
     }
     return true;
 }
-
 void DatabaseConnection_service::close()
 {
-    QSqlDatabase db = QSqlDatabase::database();
+    QSqlDatabase db = hasExternalDb
+                          ? externalDb
+                          : QSqlDatabase::database();
+
     if (db.isOpen()) {
         db.close();
     }
@@ -57,6 +73,9 @@ void DatabaseConnection_service::close()
 QSqlDatabase DatabaseConnection_service::db()
 {
     init();
-    return QSqlDatabase::database();
+
+    return hasExternalDb
+               ? externalDb
+               : QSqlDatabase::database();
 }
 

@@ -4,10 +4,11 @@
 #include "../db/test_db_factory.h"
 #include <QLocale>
 #include <QSqlQuery>
+#include "infra/databaseconnection_service.h"
 
 void TestProdutoService::inserir_produto_ok()
 {
-    db = TestDbFactory::create();
+    db = DatabaseConnection_service::db();
     Produto_Service service(db);
 
     ProdutoDTO p;
@@ -70,7 +71,6 @@ void TestProdutoService::inserir_produto_ok()
 
 void TestProdutoService::inserir_produto_errado()
 {
-    db = TestDbFactory::create();
     Produto_Service service(db);
 
     ProdutoDTO p;
@@ -104,7 +104,6 @@ void TestProdutoService::inserir_produto_errado()
 
 void TestProdutoService::erro_codigo_barras_existente()
 {
-    db = TestDbFactory::create();
     Produto_Service service(db);
 
     ProdutoDTO p;
@@ -131,7 +130,6 @@ void TestProdutoService::erro_codigo_barras_existente()
 
 void TestProdutoService::erro_preco_invalido()
 {
-    db = TestDbFactory::create();
     Produto_Service service(db);
 
     ProdutoDTO p;
@@ -157,7 +155,6 @@ void TestProdutoService::erro_preco_invalido()
 
 void TestProdutoService::erro_quantidade_invalida()
 {
-    db = TestDbFactory::create();
     Produto_Service service(db);
 
     ProdutoDTO p;
@@ -183,7 +180,6 @@ void TestProdutoService::erro_quantidade_invalida()
 
 void TestProdutoService::erro_ncm_nf()
 {
-    db = TestDbFactory::create();
     Produto_Service service(db);
 
     ProdutoDTO p;
@@ -209,7 +205,6 @@ void TestProdutoService::erro_ncm_nf()
 
 void TestProdutoService::deletar_produto_ok()
 {
-    db = TestDbFactory::create();
     Produto_Service service(db);
 
     // inserir produto
@@ -263,7 +258,6 @@ void TestProdutoService::deletar_produto_inexistente()
 
 void TestProdutoService::alterar_produto_ok()
 {
-    db = TestDbFactory::create();
     Produto_Service service(db);
 
     // inserir produto original

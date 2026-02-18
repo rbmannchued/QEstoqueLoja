@@ -5,6 +5,7 @@
 #include "../nota/acbrmanager.h"
 #include <sstream>
 #include <QMap>
+#include "../services/config_service.h"
 
 struct EventoRetornoInfo {
     QString cStat;
@@ -30,7 +31,7 @@ private:
     QMap<QString, QString> empresaValues;
     QString chnfe_global;
     ACBrNFe *acbr;
-
+    ConfigDTO configDTO;
 
 
     void preencherEvento();

@@ -123,7 +123,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/nota/ACBrNFeImport.h
         src/nota/nfceacbr.h src/nota/nfceacbr.cpp
         src/nota/nfeacbr.h src/nota/nfeacbr.cpp
-        src/schemamanager.h src/schemamanager.cpp
         src/nota/cancelnf.h src/nota/cancelnf.cpp
         src/util/ACBrConsultaCNPJ.cpp src/util/ACBrConsultaCNPJ.h
         src/util/consultacnpjmanager.h src/util/consultacnpjmanager.cpp
@@ -158,6 +157,24 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/services/schemamigration_service.h src/services/schemamigration_service.cpp
         src/infra/apppath_service.h src/infra/apppath_service.cpp
         src/infra/databaseconnection_service.h src/infra/databaseconnection_service.cpp
+        src/services/schemamigration_service.cpp src/services/schemamigration_service.h
+        src/dto/Config_dto.h
+        src/repository/config_repository.h src/repository/config_repository.cpp
+        src/services/config_service.h src/services/config_service.cpp
+        src/services/imagestorage_service.h src/services/imagestorage_service.cpp
+        src/repository/dfeinfo_repository.h src/repository/dfeinfo_repository.cpp
+        src/services/dfe_service.h src/services/dfe_service.cpp
+        src/dto/NotaFiscal_dto.h
+        src/repository/notafiscal_repository.h src/repository/notafiscal_repository.cpp
+        src/util/datautil.h src/util/datautil.cpp
+        src/services/notafiscal_service.h src/services/notafiscal_service.cpp
+        src/dto/ProdutoNota_dto.h
+        src/repository/produtonota_repository.h src/repository/produtonota_repository.cpp
+        src/services/produtonota_service.h src/services/produtonota_service.cpp
+        src/dto/Cliente_dto.h
+        src/repository/cliente_repository.h src/repository/cliente_repository.cpp
+        src/services/cliente_service.h src/services/cliente_service.cpp
+
 
 
     )

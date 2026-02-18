@@ -14,9 +14,8 @@ JanelaEmailContador::JanelaEmailContador(QWidget *parent)
     , ui(new Ui::JanelaEmailContador)
 {
     ui->setupUi(this);
-    contadorValues = Configuracao::get_All_Contador_Values();
-    empresaValues = Configuracao::get_All_Empresa_Values();
-    fiscalValues = Configuracao::get_All_Fiscal_Values();
+    Config_service *confServ = new Config_service(this);
+    configDTO = confServ->carregarTudo();
 
     ui->Dedit_Fim->setMaximumDateTime(QDateTime::currentDateTime());
     ui->Dedit_Inicio->setMaximumDateTime(QDateTime::currentDateTime());
@@ -90,8 +89,7 @@ void JanelaEmailContador::atualizarContadores()
     
     qNotas.bindValue(":ini", dtIni.toString("yyyy-MM-dd HH:mm:ss"));
     qNotas.bindValue(":fim", dtFim.toString("yyyy-MM-dd HH:mm:ss"));
-    qNotas.bindValue(":tpamb", fiscalValues.value("tp_amb"));
-    qDebug() << fiscalValues;
+    qNotas.bindValue(":tpamb", configDTO.tpAmbFiscal);
 
     if (qNotas.exec()) {
         textoNfs += "NOTAS FISCAIS:\n";
@@ -178,7 +176,7 @@ void JanelaEmailContador::on_pushButton_clicked()
     )");
     qNotas.bindValue(":ini", dtIni.toString("yyyy-MM-dd HH:mm:ss"));
     qNotas.bindValue(":fim", dtFim.toString("yyyy-MM-dd HH:mm:ss"));
-    qNotas.bindValue(":tpamb", fiscalValues.value("tp_amb"));
+    qNotas.bindValue(":tpamb", configDTO.tpAmbFiscal);
 
     if (qNotas.exec()) {
         textoNfs += "NOTAS FISCAIS:\n";
@@ -263,7 +261,7 @@ void JanelaEmailContador::enviarEmailContador(QString zip, QDate dtIni, QDate dt
 
         QString corpo;
 
-        corpo = "Olá " + contadorValues.value("contador_nome") + ",\n\n"
+        corpo = "Olá " + configDTO.nomeContador + ",\n\n"
             "Em anexo, você encontrará os documentos fiscais referente ao período entre "
                 + dtIni.toString("dd/MM/yyyy") + " e "
                 + dtFim.toString("dd/MM/yyyy") + ".";
@@ -271,8 +269,8 @@ void JanelaEmailContador::enviarEmailContador(QString zip, QDate dtIni, QDate dt
         mail->Limpar();
         mail->LimparAnexos();
         mail->AddCorpoAlternativo(corpo.toStdString());
-        mail->SetAssunto("Documentos Fiscais de " + empresaValues.value("nome_empresa").toStdString());
-        mail->AddDestinatario(contadorValues.value("contador_email").toStdString());
+        mail->SetAssunto("Documentos Fiscais de " + configDTO.nomeEmpresa.toStdString());
+        mail->AddDestinatario(configDTO.emailContador.toStdString());
         mail->AddAnexo(zip.toStdString(), "XMLs compactados");
 
         mail->Enviar();

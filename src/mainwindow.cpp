@@ -31,7 +31,6 @@
 #include "infojanelaprod.h"
 #include <QStandardPaths>
 #include "util/helppage.h"
-#include "schemamanager.h"
 #include "util/consultacnpjmanager.h"
 #include "entradas.h"
 #include "util/manifestadordfe.h"
@@ -39,11 +38,14 @@
 #include "janelaemailcontador.h"
 #include "sobre.h"
 #include "monitorfiscal.h"
-#include "../util/printutil.h"
-#include "../services/barcode_service.h"
-#include "../services/acbr_service.h"
+#include "util/printutil.h"
+#include "services/barcode_service.h"
+#include "services/acbr_service.h"
 #include "services/schemamigration_service.h"
 #include "infra/databaseconnection_service.h"
+#include "services/schemamigration_service.h"
+#include "services/config_service.h"
+#include "services/dfe_service.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -70,10 +72,10 @@ MainWindow::MainWindow(QWidget *parent)
     model->setHeaderData(4, Qt::Horizontal, tr("Código de Barras"));
     model->setHeaderData(5, Qt::Horizontal, tr("NF"));
 
-    financeiroValues = Configuracao::get_All_Financeiro_Values();
-    empresaValues = Configuracao::get_All_Empresa_Values();
-    fiscalValues = Configuracao::get_All_Fiscal_Values();
-    emailValues = Configuracao::get_All_Email_Values();
+
+    //carrega as configurações no DTO
+    Config_service *confServ = new Config_service(this);
+    configDTO = confServ->carregarTudo();
 
     // mostrar na tabela da aplicaçao a tabela do banco de dados.
     ui->Tview_Produtos->horizontalHeader()->setStyleSheet("background-color: rgb(33, 105, 149)");
@@ -132,23 +134,7 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::verProd);
 
     // ManifestadorDFe *manifestdfe = new ManifestadorDFe();
-
-    // if(manifestdfe->possoConsultar() &&
-    //     fiscalValues.value("emit_nf") == "1" && fiscalValues.value("tp_amb") == "1"){
-
-    //     try {
-    //         manifestdfe->consultarEManifestar();
-    //     }
-    //     catch (const std::exception &e) {
-    //         qDebug() << "Erro ao consultar DFE:" << e.what();
-    //     }
-    //     catch (...) {
-    //         qDebug() << "Erro desconhecido ao consultar DFE";
-    //     }
-    // }else{
-    //     qDebug() << "Nao consultado DFE";
-
-    // }
+    // manifestdfe->consultarSePossivel();
 
 }
 
@@ -158,36 +144,17 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::iniciarMigration(){
-    // SchemaMigration_service schemaService;
 
-    // // cria schema base
-    // auto r1 = schemaService.init();
-    // if (!r1.ok) {
-    //     QMessageBox::critical(this, "Erro Schema", r1.message);
-    //     QCoreApplication::quit();
-    //     return;
-    // }
+    SchemaMigration_service *schema = new SchemaMigration_service(this, ultimaVersaoSchema);
+    //conexões de ações para update de versao schema
+    connect(schema, &SchemaMigration_service::dbVersao6, this,
+            &MainWindow::atualizarConfigAcbr);
 
-    // // migra incremental
-    // auto r2 = schemaService.migrate();
-    // if (!r2.ok) {
-    //     QMessageBox::critical(this, "Erro Migração", r2.message);
-    //     QCoreApplication::quit();
-    //     return;
-    // }
-
-    // if (r2.oldVersion < 6 && r2.newVersion >= 6) {
-    //     atualizarConfigAcbr();
-    //     qDebug() << "rodou versao 6";
-    // }
-
-    // if (r2.oldVersion < 7 && r2.newVersion >= 7) {
-    //     // outra ação futura
-    //     qDebug() << "rodou versao 7";
-
-    // }
-    SchemaManager *schema = new SchemaManager(this, ultimaVersaoSchema);
-    schema->update();
+    // schema->update();
+    auto result = schema->update();
+    if(!result.ok){
+        QMessageBox::warning(this, "Erro migração", "Erro ao migrar banco de dados");
+    }
 
 }
 
@@ -551,22 +518,26 @@ void MainWindow::on_actionDocumenta_o_triggered()
 }
 
 void MainWindow::atualizarConfigAcbr(){
-    auto *acbrService = new Acbr_service(this);
-    auto res = acbrService->configurar(VERSAO_QE);
-    acbrService->configurar(VERSAO_QE);
-    if(!res.ok){
-        QMessageBox::critical(this, "Erro", res.msg);
-        return;
-    }else{
-        qDebug() << "Configurações salvas no arquivo acbrlib.ini";
-    }
+    qDebug() << " tentou atualizar acbr config";
+        auto *acbrService = new Acbr_service(this);
+        auto res = acbrService->configurar(VERSAO_QE);
+        acbrService->configurar(VERSAO_QE);
+        if(!res.ok){
+            if(res.erro != AcbrErro::NaoEmitindoNf){
+                QMessageBox::critical(this, "Erro", res.msg);
+                return;
+            }
+
+        }else{
+            qDebug() << "Configurações salvas no arquivo acbrlib.ini";
+        }
 
 }
 
 
 void MainWindow::on_Btn_Entradas_clicked()
 {
-    if(fiscalValues.value("emit_nf") == "1" && fiscalValues.value("tp_amb") == "1"){
+    if(configDTO.emitNfFiscal && configDTO.tpAmbFiscal){
         Entradas *entradas = new Entradas();
         entradas->show();
         connect(entradas, &Entradas::produtoAdicionado, this,

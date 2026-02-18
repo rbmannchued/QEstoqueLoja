@@ -6,6 +6,7 @@
 #include <QLocale>
 #include "util/ibptutil.h"
 #include "services/Produto_service.h"
+#include "services/config_service.h"
 
 
 namespace Ui {
@@ -39,8 +40,6 @@ private slots:
 private:
 
     Ui::InserirProduto *ui;
-    QMap<QString, QString> financeiroValues;
-     QMap<QString, QString> produtoValues;
     QSet<QString> generatedNumbers;
     QLocale portugues;
     QSqlDatabase db = QSqlDatabase::database();
@@ -48,6 +47,7 @@ private:
     //bool eventFilter(QObject *watched, QEvent *event) override;
     IbptUtil *util;
     Produto_Service *service;
+    ConfigDTO configDTO;
 
     void carregarConfiguracoes();
 signals:
