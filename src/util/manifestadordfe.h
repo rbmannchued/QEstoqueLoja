@@ -13,51 +13,9 @@
 #include "../dto/NotaFiscal_dto.h"
 #include <qlocale.h>
 #include "../services/produtonota_service.h"
+#include "../util/nfxmlutil.h"
+#include "../services/cliente_service.h"
 
-struct ProcNfe {
-    QString chave;
-    QString nsu;
-    QString cnpjEmit;
-    QString schema;
-    QString vnf;
-    QString cstat;
-    QString xml_path;
-    QString nProt;
-    QString dhEmi;
-    QString nome;
-    QString cSitNfe;
-};
-
-
-struct Emitente {
-    QString cnpj;
-    QString nome;
-    QString xLgr;
-    QString nro;
-    QString xBairro;
-    QString xMun;
-    QString cMun;
-    QString uf;
-    QString cep;
-    QString ie;
-};
-
-// struct ProdutoNota {
-//     float quant;
-//     QString desc;
-//     double preco;
-//     QString cod_barras;
-//     QString un_comercial;
-//     QString ncm;
-//     QString csosn;
-//     QString pis;
-//     QString cfop;
-//     float aliquota_imposto;
-//     QString nitem;
-//     qlonglong id_nf;
-//     QString cst_icms;
-//     bool tem_st;
-// };
 
 class ManifestadorDFe : public QObject
 {
@@ -80,6 +38,8 @@ private:
     NotaFiscal_service nfServ;
     QLocale portugues;
     ProdutoNota_service prodNotaServ;
+    NfXmlUtil xmlUtil;
+    Cliente_service cliServ;
 
 
 
@@ -92,7 +52,6 @@ private:
     void processarResumo(const QString &bloco);
     void processarNota(const QString &bloco);
     bool salvarEmitenteCliente(NotaFiscalDTO notaInfo);
-    Emitente lerEmitenteDoXML(const QString &xmlPath);
     bool atualizarNotaBanco(NotaFiscalDTO notaInfo);
     void processarHeaderDfeXML(const QString &bloco);
     bool salvarProdutosNota(const QString &xml_path, const QString &chnfe);

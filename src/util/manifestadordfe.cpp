@@ -256,8 +256,8 @@ void ManifestadorDFe::processarResumo(const QString &bloco)
     resumo.nProt      = campo("nProt");
     resumo.dhEmi      = campo("dhEmi");
     resumo.tpAmb = 1; //NOVO refactoring
-
-    resumo.valorTotal = vnf.toDouble();
+    qDebug() << "Valor total resumo: " << vnf;
+    resumo.valorTotal = portugues.toDouble(vnf);
 
     QString path = campo("arquivo");
 
@@ -316,7 +316,7 @@ void ManifestadorDFe::processarNota(const QString &bloco)
     nfe.nProt    = campoTexto("nProt");
     nfe.dhEmi    = campoTexto("dhEmi");
     QString cSitNfe  = campoTexto("cSitNFe");
-    nfe.valorTotal = portugues.toString(vnf.toDouble()).toDouble();
+    nfe.valorTotal = portugues.toDouble(vnf);
 
     QString path = campoTexto("arquivo");
 
@@ -370,7 +370,7 @@ void ManifestadorDFe::processarNota(const QString &bloco)
 bool ManifestadorDFe::salvarProdutosNota(const QString &xml_path, const QString &chnfe){
     qlonglong id_nf = nfServ.getIdFromChave(chnfe);
 
-    QList<ProdutoNotaDTO> produtos = nfServ.carregarProdutosDaNFe(xml_path, id_nf);
+    QList<ProdutoNotaDTO> produtos = xmlUtil.carregarProdutosDaNFe(xml_path, id_nf);
 
     auto result = prodNotaServ.inserirListaProdutos(produtos);
     if(!result.ok){
@@ -381,28 +381,13 @@ bool ManifestadorDFe::salvarProdutosNota(const QString &xml_path, const QString 
 }
 
 bool ManifestadorDFe::atualizarNotaBanco(NotaFiscalDTO notaInfo){
-    NotaFiscalDTO nf = nfServ.lerNotaFiscalDoXML(notaInfo.xmlPath);
+    NotaFiscalDTO nf = xmlUtil.lerNotaFiscalDoXML(notaInfo.xmlPath);
     qDebug() << "XML PATH atualizar NOTA BANCO: " << notaInfo.xmlPath;
-    if(!db.isOpen()){
-        if(!db.open()){
-            qDebug() << "banco nao abriu atualizarNotaBanco";
-            return false;
-        }
-    }
-    QSqlQuery q(db);
-    int idcliente;
-    q.prepare("SELECT id FROM clientes WHERE cpf = :cnpjemit");
-    q.bindValue(":cnpjemit", nf.cnpjEmit);
-    if(!q.exec()){
-        qDebug() << "nao executou query para achar idcliente em atualizarNotaBanco()";
-        return false;
+    qlonglong idcliente;
+    idcliente = cliServ.getIdFromCpfCnpj(nf.cnpjEmit);
 
-    }else{
-        if (q.next()) {
-            idcliente = q.value(0).toInt();
-            nf.idEmissorCliente = idcliente;
-        }
-    }
+    nf.idEmissorCliente = idcliente;
+
     auto r1 = nfServ.updateWhereChave(nf, notaInfo.chNfe);
     if(!r1.ok){
         qDebug() << r1.msg;
@@ -413,75 +398,25 @@ bool ManifestadorDFe::atualizarNotaBanco(NotaFiscalDTO notaInfo){
 }
 
 bool ManifestadorDFe::salvarEmitenteCliente(NotaFiscalDTO notaInfo){
-    Emitente emi = lerEmitenteDoXML(notaInfo.xmlPath);
+    ClienteDTO emi = xmlUtil.getEmitenteFromXML(notaInfo.xmlPath);
 
-    if(!db.open()){
-        qDebug() << "banco de dados nao aberto salvarEmitenteCliente";
-        return false;
-    }
-    bool ehPf = false;
-    int indiedest = 1;
-    if(emi.cnpj.length() == 14){
-        ehPf =false;
-    }else{
-        ehPf = true;
-    }
-    if(!emi.ie.isEmpty()){
-        indiedest = 1;
-    }else{
-        indiedest = 0;
-    }
+    qlonglong total = cliServ.contarQuantosRegistrosPorCPFCNPJ(emi.cpf);
 
-
-    QDateTime dataIngles = QDateTime::currentDateTime();
-    QString dataFormatada = dataIngles.toString("yyyy-MM-dd HH:mm:ss");
-    QSqlQuery check;
-    check.prepare("SELECT COUNT(*) FROM clientes WHERE cpf = :cpf");
-    check.bindValue(":cpf", emi.cnpj);
-
-    if (!check.exec()) {
-        qDebug() << "Erro ao verificar cliente existente:" << check.lastError();
-        return false;
-    }
-
-    check.next();
-    int total = check.value(0).toInt();
 
     if (total > 0) {
         qDebug() << "Cliente já cadastrado com este CNPJ/CPF!";
         return true;  // evita inserir duplicado
     }
-    QSqlQuery query;
-    query.prepare("INSERT INTO clientes (nome, email, telefone, endereco, cpf, "
-                  "data_nascimento, data_cadastro, eh_pf, numero_end, bairro, "
-                  "xMun, cMun, uf, cep, indIEDest, ie) VALUES (:nome, :email, :telefone, :endereco, :cpf, "
-                  ":data_nascimento, :data_cadastro, :eh_pf, :numero_end, :bairro, "
-                  ":xMun, :cMun, :uf, :cep, :indIEDest, :ie)");
-    query.bindValue(":nome", emi.nome);
-    query.bindValue(":email", "");
-    query.bindValue(":telefone", "");
-    query.bindValue(":endereco", emi.xLgr);
-    query.bindValue(":cpf", emi.cnpj);
-    query.bindValue(":data_nascimento", "");
-    query.bindValue(":data_cadastro", dataFormatada);
-    query.bindValue(":eh_pf", ehPf);
-    query.bindValue(":numero_end", emi.nro);
-    query.bindValue(":bairro", emi.xBairro);
-    query.bindValue(":xMun", emi.xMun);
-    query.bindValue(":cMun", emi.cMun);
-    query.bindValue(":uf", emi.uf);
-    query.bindValue(":cep", emi.cep);
-    query.bindValue(":indIEDest", indiedest);
-    query.bindValue(":ie", emi.ie);
 
-    if(!query.exec()){
+    auto result = cliServ.inserirClienteEmitente(emi);
+
+    if(!result.ok){
         qDebug() << "Query insert salvarEmitenteCliente nao funcionou!";
         return false;
     }else{
         qDebug() << "Fornecedor adicionado com sucesso!";
-
+        return true;
     }
-    return true;
 
 }
 
@@ -538,58 +473,6 @@ void ManifestadorDFe::salvarEventoNoBanco(const QString &tipo, const EventoRetor
     if (!q.exec())
         qDebug() << "Erro ao salvar evento_fiscal:" << q.lastError();
 
-}
-
-Emitente ManifestadorDFe::lerEmitenteDoXML(const QString &xmlPath) {
-    Emitente e;
-    QFile file(xmlPath);
-
-    if (!file.open(QIODevice::ReadOnly)) {
-        qWarning() << "Erro ao abrir XML:" << xmlPath;
-        return e;
-    }
-
-    QDomDocument doc;
-    if (!doc.setContent(&file)) {
-        qWarning() << "Erro ao ler XML:" << xmlPath;
-        return e;
-    }
-
-    file.close();
-
-    auto getTag = [&](const QDomElement &parent, const QString &tag) {
-        QDomNode n = parent.elementsByTagName(tag).item(0);
-        return n.isNull() ? QString() : n.toElement().text().trimmed();
-    };
-
-    // Posiciona no nó <emit>
-    QDomNodeList emits = doc.elementsByTagName("emit");
-    if (emits.isEmpty()) {
-        qWarning() << "XML sem <emit>";
-        return e;
-    }
-
-    QDomElement emitEl = emits.at(0).toElement();
-
-    // Dados diretos
-    e.cnpj = getTag(emitEl, "CNPJ");
-    e.nome = getTag(emitEl, "xNome");
-    e.ie   = getTag(emitEl, "IE");
-
-    // Endereço
-    QDomNode endNode = emitEl.elementsByTagName("enderEmit").item(0);
-    if (!endNode.isNull()) {
-        QDomElement end = endNode.toElement();
-        e.xLgr   = getTag(end, "xLgr");
-        e.nro    = getTag(end, "nro");
-        e.xBairro= getTag(end, "xBairro");
-        e.xMun   = getTag(end, "xMun");
-        e.cMun   = getTag(end, "cMun");
-        e.uf     = getTag(end, "UF");
-        e.cep    = getTag(end, "CEP");
-    }
-
-    return e;
 }
 
 void ManifestadorDFe::consultarSePossivel(){

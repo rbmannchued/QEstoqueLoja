@@ -171,6 +171,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/dto/ProdutoNota_dto.h
         src/repository/produtonota_repository.h src/repository/produtonota_repository.cpp
         src/services/produtonota_service.h src/services/produtonota_service.cpp
+        src/dto/Cliente_dto.h
+        src/repository/cliente_repository.h src/repository/cliente_repository.cpp
+        src/services/cliente_service.h src/services/cliente_service.cpp
+
 
 
     )
