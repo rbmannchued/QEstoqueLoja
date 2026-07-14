@@ -453,7 +453,7 @@ void MainWindow::on_Btn_Clientes_clicked()
 
 
     Clientes *clientes = new Clientes;
-    clientes->setWindowModality(Qt::ApplicationModal);
+    // clientes->setWindowModality(Qt::ApplicationModal);
     clientes->show();
 }
 
