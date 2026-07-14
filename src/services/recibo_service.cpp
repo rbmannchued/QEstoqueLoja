@@ -37,10 +37,22 @@ void Recibo_service::imprimirReciboVenda(qlonglong idvenda){
 
     VendasDTO venda = vendaServ.getVenda(idvenda);
 
-    QDateTime dataVenda = QDateTime::fromString(
-        venda.dataHora,
-        "yyyy-MM-dd hh:mm:ss"
-        );
+
+
+    QDateTime dataVenda;
+    if (venda.dataHora.contains("T")) {
+        dataVenda = QDateTime::fromString(
+            venda.dataHora,
+            Qt::ISODateWithMs
+            );
+    } else {
+        dataVenda = QDateTime::fromString(
+            venda.dataHora,
+            "yyyy-MM-dd HH:mm:ss"
+            );
+    }
+
+    QString dataFormatada = dataVenda.toString("dd/MM/yyyy HH:mm");
 
 
     int yPos = 30; // Posição inicial para começar a desenhar o texto
@@ -59,7 +71,7 @@ void Recibo_service::imprimirReciboVenda(qlonglong idvenda){
     yPos += 20;
     painter.drawText(xPos, yPos, configs.telefoneEmpresa);
     yPos += 20;
-    painter.drawText(xPos, yPos, "Data/Hora: " + portugues.toString(dataVenda, "dd/MM/yyyy HH:mm"));
+    painter.drawText(xPos, yPos, "Data/Hora: " + dataFormatada);
     yPos += 20;
     painter.drawText(xPos, yPos, "Cliente: " + venda.clienteNome);
     yPos += 30;
